@@ -164,6 +164,7 @@ private struct LifeHeader: View {
     let grid: LifeGrid?
     let onSetUp: () -> Void
     @State private var shown: Double = 0
+    @ScaledMetric(relativeTo: .largeTitle) private var heroSize: CGFloat = 56
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -174,8 +175,10 @@ private struct LifeHeader: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.white.opacity(0.8))
                     Text(shown, format: .percent.precision(.fractionLength(1)))
-                        .font(.system(size: 56, weight: .bold, design: .rounded))
+                        .font(.system(size: heroSize, weight: .bold, design: .rounded))
                         .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
                         .contentTransition(.numericText(value: shown))
                         .foregroundStyle(.white)
                     Text("\(grid.weeksLived.formatted()) weeks lived · \(grid.weeksRemaining.formatted()) remain")
@@ -193,7 +196,7 @@ private struct LifeHeader: View {
             }
             .padding(20)
         }
-        .frame(height: 220)
+        .frame(minHeight: 220)
         .clipShape(.rect(cornerRadius: 24))
         .onAppear(perform: roll)
         .onChange(of: grid?.fractionRemaining) { roll() }

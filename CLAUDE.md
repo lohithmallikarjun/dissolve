@@ -20,7 +20,7 @@ It is for one person (me) and will never be on the App Store. **I use a free App
 | Lifespan | **80 years** (life grid is 80 rows × 52) |
 | Template edits | Never change past entries (entries copy blocks) |
 
-| Milestones done | M0 code (device check pending), M1, M2, M3, M4, M5 |
+| Milestones done | M0 code (device check pending), M1–M6 (M7 folded into M6; no Apple Watch, ever) |
 | CI | `.github/workflows/build.yml` builds on GitHub macOS (Xcode 26 fallback until 27 ships), launches with `-demoData -widgetGallery -section:<today|progress>`, pushes screenshots to the `screenshots` branch |
 
 Sync implementation: every save goes through `Persistence.save` (records changes → App Group outbox, also from

@@ -33,6 +33,7 @@ struct CountdownText {
 /// A tile in the Life screen's horizontal row.
 struct CountdownTile: View {
     let countdown: Countdown
+    @ScaledMetric(relativeTo: .largeTitle) private var numberSize: CGFloat = 40
 
     var body: some View {
         let state = countdown.state()
@@ -48,8 +49,10 @@ struct CountdownTile: View {
             }
             Spacer(minLength: 0)
             Text(text.number, format: .number)
-                .font(.system(size: 40, weight: .bold, design: .rounded))
+                .font(.system(size: numberSize, weight: .bold, design: .rounded))
                 .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
                 .contentTransition(.numericText(value: Double(text.number)))
             Text(text.caption).font(.caption.weight(.semibold)).opacity(0.85)
             Text(countdown.title).font(.subheadline.weight(.semibold)).lineLimit(1)
@@ -75,6 +78,7 @@ struct CountdownTile: View {
 /// Full-screen live clock: D:H:M:S, weeks + days, progress ring, celebration on the day.
 struct CountdownDetailView: View {
     let countdown: Countdown
+    @ScaledMetric(relativeTo: .largeTitle) private var clockSize: CGFloat = 44
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @State private var editing = false
@@ -161,7 +165,9 @@ struct CountdownDetailView: View {
             ForEach(parts.indices, id: \.self) { i in
                 VStack(spacing: 2) {
                     Text(parts[i].0, format: .number)
-                        .font(.system(size: 44, weight: .bold, design: .rounded))
+                        .font(.system(size: clockSize, weight: .bold, design: .rounded))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
                         .monospacedDigit()
                         .contentTransition(.numericText(value: Double(parts[i].0)))
                         .animation(.snappy, value: parts[i].0)

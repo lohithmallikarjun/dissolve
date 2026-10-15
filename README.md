@@ -147,6 +147,38 @@ They're refreshed every time you open Dissolve.
 
 Insights need a few days of data; until then the cards say so.
 
+## Milestone 6: try it (polish + extras)
+
+| # | Do | Expect |
+|---|---|---|
+| 1 | Today: tap a yes/no habit | The checkmark draws itself; the flame bounces |
+| 2 | Finish every habit for the day | A short sparkle burst + haptic |
+| 3 | The floating glass **Journal today** pill | Opens today's entry; once written it becomes **Journaled** + a streak bubble |
+| 4 | Long-press a habit → Details (or tap a mini grid in Progress) | The card zooms into the detail screen |
+| 5 | Progress → the 3M / 6M / 1Y glass picker | The selection glides between options |
+| 6 | Journal: tap into text | A glass formatting bar: bullet, checkbox, time, quote, hide keyboard |
+| 7 | Journal → ⋯ → **Templates…** → New Template, add blocks (checklist, rating, habit summary, image), assign weekdays | Days with that weekday start from it; old entries never change |
+| 8 | Journal on a date that has an entry from last year | An **On this day** card at the top |
+| 9 | A countdown with a time less than 8 hours away (or **Show on Lock Screen**) | Live timer on the Lock Screen and Dynamic Island |
+| 10 | Settings → **Export Everything…** | A zip: `data.json`, `Journal/*.md`, `Photos/` |
+| 11 | Life → **Tint past weeks by consistency** | Weeks since your first habit turn shades of green |
+| 12 | Stats → **Patterns** (after 30 days) | e.g. "Your mood tends to be higher on days you do Meditate" |
+| 13 | Mac Today: ↑ / ↓ then Space | Moves the selection and checks off the selected habit |
+| 14 | Settings → Accessibility → Larger Text / Reduce Motion / Display & Text Size; Home Screen tinted icons | Numbers scale; motion becomes crossfades; widgets tint cleanly |
+
+### App icon (Icon Composer)
+
+The repo has a placeholder icon (a green grid dissolving into particles). To make a real Liquid Glass icon:
+
+1. Open **Icon Composer** (Xcode → Open Developer Tool → Icon Composer).
+2. Drag `App/Assets.xcassets/AppIcon.appiconset/icon-ios.png` in as a reference, or draw layers:
+   background (green gradient), a 4×4 grid of rounded squares, and a few loose squares top-right.
+   Put each on its own layer so the glass shines per layer.
+3. Preview **Default / Dark / Tinted / Clear** at the top; adjust layer opacity until all four read well.
+4. **File → Save** as `AppIcon.icon` into the `App/` folder.
+5. Delete the placeholder folder `App/Assets.xcassets/AppIcon.appiconset` (so there's only one "AppIcon").
+6. Run `scripts/setup-mac.sh`, then build. The project already uses the icon named `AppIcon`.
+
 ## Weekly reinstall (free account: apps expire after 7 days)
 
 `scripts/reinstall-iphone.sh` pulls, builds and reinstalls Dissolve on your iPhone over Wi-Fi.
