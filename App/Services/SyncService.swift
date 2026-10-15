@@ -75,11 +75,12 @@ final class SyncService {
         }
         let uploadPhotos = outgoing.filter { $0.entity == SyncEntity.photo && !$0.deleted }.map(\.id)
         let cursors = state.cursors
+        let toSend = outgoing
 
         do {
             let result = try await Task.detached {
                 try FolderIO.withAccess(folder) {
-                    try SyncIO.append(outgoing, folder: folder, device: device, month: month)
+                    try SyncIO.append(toSend, folder: folder, device: device, month: month)
                     SyncIO.uploadPhotos(uploadPhotos, folder: folder)
                     return try SyncIO.readOthers(folder: folder, device: device, cursors: cursors)
                 }
