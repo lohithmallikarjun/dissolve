@@ -72,3 +72,9 @@ On the **Milestone 0** screen:
 ```sh
 swift test --package-path Engine
 ```
+
+## CI screenshots
+
+Every push to `main` runs `.github/workflows/build.yml` on a GitHub macOS runner: Engine tests, macOS + iOS builds,
+then the app is launched in the iOS Simulator (light + dark) and screenshots are force-pushed to the
+[`screenshots`](../../tree/screenshots) branch.

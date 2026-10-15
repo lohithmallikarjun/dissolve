@@ -1,0 +1,114 @@
+# Builds Dissolve on a GitHub macOS runner, runs the Engine tests, launches the app
+# in the iOS Simulator and publishes screenshots to the `screenshots` branch.
+name: Build & screenshots
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  BUNDLE_ID: com.lohith.dissolve
+  DERIVED: ${{ github.workspace }}/build
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 27
+        run: |
+          ls -d /Applications/Xcode*.app
+          XC=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XC" ]; then
+            echo "::error::No Xcode 27 on this runner image (needed for the iOS/macOS 27 target)."
+            exit 1
+          fi
+          sudo xcode-select -s "$XC"
+          xcodebuild -version
+
+      - name: Engine tests
+        run: swift test --package-path Engine
+
+      - name: Generate project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Build for macOS
+        run: |
+          xcodebuild -project Dissolve.xcodeproj -scheme Dissolve \
+            -destination 'generic/platform=macOS' -derivedDataPath "$DERIVED" \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= \
+            build | xcbeautify || exit ${PIPESTATUS[0]}
+
+      - name: Pick and boot an iPhone simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          phones = [d for runtime, ds in devices.items() if "iOS-27" in runtime
+                    for d in ds if d["name"].startswith("iPhone")]
+          pro = [d for d in phones if d["name"].endswith("Pro")]
+          print(sorted(pro or phones, key=lambda d: d["name"])[-1]["udid"])')
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl status_bar "$UDID" override --time 9:41 --batteryLevel 100 --batteryState charged --cellularBars 4 --wifiBars 3
+
+      - name: Build for iOS Simulator
+        run: |
+          xcodebuild -project Dissolve.xcodeproj -scheme Dissolve \
+            -destination "id=$UDID" -derivedDataPath "$DERIVED" \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= \
+            build | xcbeautify || exit ${PIPESTATUS[0]}
+
+      - name: iOS screenshots
+        run: |
+          mkdir -p shots
+          xcrun simctl install "$UDID" "$DERIVED/Build/Products/Debug-iphonesimulator/Dissolve.app"
+          for mode in light dark; do
+            xcrun simctl ui "$UDID" appearance "$mode"
+            xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
+            xcrun simctl launch "$UDID" "$BUNDLE_ID"
+            sleep 8
+            xcrun simctl io "$UDID" screenshot "shots/ios-$mode.png"
+          done
+
+      - name: macOS screenshot
+        continue-on-error: true
+        run: |
+          APP="$DERIVED/Build/Products/Debug/Dissolve.app"
+          open "$APP"
+          sleep 10
+          screencapture -x shots/mac.png
+          osascript -e 'quit app "Dissolve"' || true
+
+      - name: Publish to screenshots branch
+        if: github.event_name != 'pull_request'
+        run: |
+          cd shots
+          printf '# Screenshots\n\nCommit %s · %s\n' "$GITHUB_SHA" "$(date -u '+%Y-%m-%d %H:%M UTC')" > README.md
+          git init -q -b screenshots
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -qm "Screenshots for $GITHUB_SHA"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" screenshots
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: shots
+          if-no-files-found: ignore
