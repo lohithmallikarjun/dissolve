@@ -1,5 +1,7 @@
+import AppIntents
 import SwiftData
 import SwiftUI
+import UserNotifications
 #if os(iOS)
 import BackgroundTasks
 #endif
@@ -16,6 +18,7 @@ struct DissolveApp: App {
     @State private var model = AppModel()
     @State private var journalLock = JournalLock()
     @Environment(\.scenePhase) private var scenePhase
+    private let notificationHandler = NotificationHandler()
     #if os(macOS) && DEBUG
     @NSApplicationDelegateAdaptor(LaunchDiagnostics.self) private var launchDiagnostics
     #endif
@@ -32,6 +35,9 @@ struct DissolveApp: App {
         #if DEBUG
         DemoData.seedIfRequested(in: made.0.mainContext)
         #endif
+        UNUserNotificationCenter.current().delegate = notificationHandler
+        ReminderService.registerCategories()
+        DissolveShortcuts.updateAppShortcutParameters()
     }
 
     var body: some Scene {
@@ -50,6 +56,7 @@ struct DissolveApp: App {
                 #endif
                 .onReceive(NotificationCenter.default.publisher(for: .dissolveLocalChange)) { _ in
                     sync.syncSoon(container: container)
+                    Task { await ReminderService.reschedule(container: container) }
                 }
                 .onChange(of: syncFolder.folderURL) { _, url in
                     if url != nil { Task { await sync.sync(container: container) } }
@@ -67,7 +74,14 @@ struct DissolveApp: App {
             case .active:
                 model.refreshToday()
                 reloadIfChangedElsewhere()
-                Task { await sync.sync(container: container) }
+                if let url = AppSettings.pendingURL {
+                    AppSettings.pendingURL = nil
+                    model.handle(url)
+                }
+                Task {
+                    await sync.sync(container: container)
+                    await ReminderService.reschedule(container: container)
+                }
             case .background:
                 journalLock.lock()
                 #if os(iOS)

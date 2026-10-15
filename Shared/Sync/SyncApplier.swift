@@ -102,6 +102,7 @@ enum SyncApplier {
         h.startDate = f.startDate
         h.archivedAt = f.archivedAt
         h.createdAt = f.createdAt
+        h.reminderMinutes = f.reminderMinutes
         h.updatedAt = r.updatedAt
     }
 

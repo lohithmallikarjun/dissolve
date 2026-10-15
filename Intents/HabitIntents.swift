@@ -37,9 +37,12 @@ struct LogHabitIntent: AppIntent {
 
     init() {}
 
-    init(habitID: UUID) {
-        self.habitID = habitID.uuidString
+    init(habitID: UUID?) {
+        self.habitID = habitID?.uuidString ?? ""
     }
+
+    /// Raw IDs aren't useful in Shortcuts; "Log Habit" (with a habit picker) is the public one.
+    static let isDiscoverable = false
 
     func perform() async throws -> some IntentResult {
         try await HabitIntentStore.primaryAction(habitID: habitID)
@@ -75,13 +78,22 @@ enum HabitIntentStore {
         return try context.fetch(descriptor).map { HabitEntity(id: $0.id, name: $0.name) }
     }
 
-    static func primaryAction(habitID: String) throws {
+    static func primaryAction(habitID: String, on date: LocalDate? = nil) throws {
         guard let id = UUID(uuidString: habitID) else { return }
         let context = ModelContext(try SharedModelContainer.appGroup())
+        guard let habit = habit(id, in: context) else { return }
+        HabitActions.primaryAction(habit, on: date ?? AppSettings.today(), in: context)
+        markExternalChange()
+    }
+
+    static func habit(_ id: UUID, in context: ModelContext) -> Habit? {
         var descriptor = FetchDescriptor<Habit>(predicate: #Predicate { $0.id == id })
         descriptor.fetchLimit = 1
-        guard let habit = try context.fetch(descriptor).first else { return }
-        HabitActions.primaryAction(habit, on: AppSettings.today(), in: context)
+        return try? context.fetch(descriptor).first
+    }
+
+    /// Tells the app (if running) to reload: this change came from another context or process.
+    static func markExternalChange() {
         AppGroup.defaults.set(Date.now.timeIntervalSince1970, forKey: SharedKeys.externalChangeAt)
     }
 }

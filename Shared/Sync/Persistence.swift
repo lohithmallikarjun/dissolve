@@ -21,6 +21,9 @@ enum Persistence {
         }
         Outbox.append(records)
         WidgetCenter.shared.reloadAllTimelines()
+        #if os(iOS)
+        ControlCenter.shared.reloadAllControls()
+        #endif
         NotificationCenter.default.post(name: .dissolveLocalChange, object: nil)
     }
 

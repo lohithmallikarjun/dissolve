@@ -16,6 +16,8 @@ final class Habit {
     /// `yyyy-MM-dd`: the first day the habit counts.
     var startDate: String = ""
     var archivedAt: Date?
+    /// Reminder time as minutes after midnight; nil = no reminder.
+    var reminderMinutes: Int?
     var createdAt: Date = Date.now
     var updatedAt: Date = Date.now
 

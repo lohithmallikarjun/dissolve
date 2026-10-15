@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import UserNotifications
 import UniformTypeIdentifiers
 import WidgetKit
 
@@ -13,6 +14,11 @@ struct SettingsView: View {
     @Query(filter: #Predicate<Habit> { $0.archivedAt != nil }, sort: \Habit.name) private var archived: [Habit]
     @State private var dayEndsAt = AppSettings.dayEndsAtHour
     @State private var pickingFolder = false
+    @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
+    @State private var journalNudge = AppSettings.journalNudgeMinutes != nil
+    @State private var nudgeTime = Calendar.current.date(
+        from: DateComponents(hour: (AppSettings.journalNudgeMinutes ?? 1290) / 60,
+                             minute: (AppSettings.journalNudgeMinutes ?? 1290) % 60)) ?? .now
 
     var body: some View {
         @Bindable var journalLock = journalLock
@@ -41,6 +47,33 @@ struct SettingsView: View {
             } footer: {
                 Text("Pick the same iCloud Drive folder on your iPhone and Mac.")
             }
+
+            Section {
+                switch notificationStatus {
+                case .authorized, .provisional:
+                    Label("Notifications on", systemImage: "bell.badge.fill").foregroundStyle(.green)
+                case .denied:
+                    Label("Notifications are off for Dissolve in system Settings", systemImage: "bell.slash")
+                        .foregroundStyle(.secondary)
+                default:
+                    Button("Allow Notifications", systemImage: "bell") {
+                        Task {
+                            _ = await ReminderService.requestPermission()
+                            await refreshNotifications()
+                        }
+                    }
+                }
+                Toggle("Evening journal nudge", isOn: $journalNudge)
+                if journalNudge {
+                    DatePicker("Time", selection: $nudgeTime, displayedComponents: .hourAndMinute)
+                }
+            } header: {
+                Text("Reminders")
+            } footer: {
+                Text("Habit reminders are set per habit (Edit Habit → Remind me). The journal nudge skips days you've already written.")
+            }
+            .onChange(of: journalNudge) { saveNudge() }
+            .onChange(of: nudgeTime) { saveNudge() }
 
             Section {
                 Toggle("Lock with \(journalLock.biometryName)", isOn: $journalLock.isEnabled)
@@ -95,5 +128,16 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .navigationTitle("Settings")
         .fileImporter(isPresented: $pickingFolder, allowedContentTypes: [.folder]) { syncFolder.select($0) }
+        .task { await refreshNotifications() }
+    }
+
+    private func refreshNotifications() async {
+        notificationStatus = await ReminderService.authorizationStatus()
+    }
+
+    private func saveNudge() {
+        let time = Calendar.current.dateComponents([.hour, .minute], from: nudgeTime)
+        AppSettings.journalNudgeMinutes = journalNudge ? (time.hour ?? 21) * 60 + (time.minute ?? 30) : nil
+        Task { await ReminderService.reschedule(container: context.container) }
     }
 }

@@ -23,6 +23,8 @@ struct HabitEditorView: View {
     @State private var everyNDays = 2
     @State private var startDate = Date.now
     @State private var scheduleFrom = Date.now
+    @State private var remind = false
+    @State private var reminderTime = Calendar.current.date(from: DateComponents(hour: 8)) ?? .now
     @State private var confirmingDelete = false
     @State private var loaded = false
 
@@ -116,6 +118,15 @@ struct HabitEditorView: View {
                     } else if scheduleChanged {
                         DatePicker("New schedule from", selection: $scheduleFrom, displayedComponents: .date)
                     }
+                }
+
+                Section {
+                    Toggle("Remind me", isOn: $remind.animation(.snappy))
+                    if remind {
+                        DatePicker("Time", selection: $reminderTime, displayedComponents: .hourAndMinute)
+                    }
+                } footer: {
+                    Text("Only on days it's due, and not once it's done.")
                 }
 
                 if let habit {
@@ -228,6 +239,10 @@ struct HabitEditorView: View {
         kind = habit.kind
         target = habit.target
         unit = habit.unit
+        if let minutes = habit.reminderMinutes {
+            remind = true
+            reminderTime = Calendar.current.date(from: DateComponents(hour: minutes / 60, minute: minutes % 60)) ?? reminderTime
+        }
         switch habit.rule(on: AppSettings.today()) {
         case .daily: scheduleKind = .daily
         case .weekdays(let days): scheduleKind = .weekdays; weekdays = days
@@ -239,6 +254,9 @@ struct HabitEditorView: View {
     private func save() {
         let dayEnds = AppSettings.dayEndsAtHour
         let target = kind == .binary ? 1 : max(target, kind == .limit ? 0 : 1)
+        let time = Calendar.current.dateComponents([.hour, .minute], from: reminderTime)
+        let reminderMinutes = remind ? (time.hour ?? 8) * 60 + (time.minute ?? 0) : nil
+        if remind { Task { _ = await ReminderService.requestPermission() } }
         if let habit {
             habit.name = name.trimmingCharacters(in: .whitespaces)
             habit.symbol = symbol
@@ -246,6 +264,7 @@ struct HabitEditorView: View {
             habit.kind = kind
             habit.target = target
             habit.unit = unit
+            habit.reminderMinutes = reminderMinutes
             habit.updatedAt = .now
             if scheduleChanged {
                 let from = max(LocalDate(scheduleFrom, dayEndsAtHour: 0), habit.localStartDate)
@@ -263,6 +282,7 @@ struct HabitEditorView: View {
                 name: name.trimmingCharacters(in: .whitespaces), symbol: symbol, colorName: colorName,
                 kind: kind, target: target, unit: unit, sortOrder: nextSortOrder,
                 startDate: min(start, LocalDate(.now, dayEndsAtHour: dayEnds)))
+            habit.reminderMinutes = reminderMinutes
             context.insert(habit)
             let schedule = HabitSchedule(rule: rule, effectiveFrom: habit.localStartDate)
             context.insert(schedule)

@@ -53,6 +53,7 @@ struct HabitFields: Codable {
     var startDate: String
     var archivedAt: Date?
     var createdAt: Date
+    var reminderMinutes: Int?
 }
 
 struct HabitScheduleFields: Codable {
@@ -118,7 +119,8 @@ extension Habit: Syncable {
     func syncFields() throws -> JSONValue {
         try JSONValue(encoding: HabitFields(
             name: name, symbol: symbol, colorName: colorName, kind: kindRaw, target: target, unit: unit,
-            sortOrder: sortOrder, startDate: startDate, archivedAt: archivedAt, createdAt: createdAt))
+            sortOrder: sortOrder, startDate: startDate, archivedAt: archivedAt, createdAt: createdAt,
+            reminderMinutes: reminderMinutes))
     }
 }
 

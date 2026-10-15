@@ -8,6 +8,9 @@ struct DissolveWidgetsBundle: WidgetBundle {
         TimeWidgetsBundle().body
         JournalWidgetsBundle().body
         DiagnosticWidget()
+        #if os(iOS)
+        ControlsBundle().body
+        #endif
     }
 }
 

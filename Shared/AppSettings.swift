@@ -14,6 +14,26 @@ enum AppSettings {
         set { AppGroup.defaults.set(newValue, forKey: dayEndsAtKey) }
     }
 
+    private static let journalNudgeKey = "settings.journalNudgeMinutes"
+    private static let pendingURLKey = "settings.pendingURL"
+
+    /// Evening journal nudge, minutes after midnight; nil = off. Default 21:30.
+    static var journalNudgeMinutes: Int? {
+        get {
+            let defaults = AppGroup.defaults
+            guard let value = defaults.object(forKey: journalNudgeKey) as? Int else { return 21 * 60 + 30 }
+            return value < 0 ? nil : value
+        }
+        set { AppGroup.defaults.set(newValue ?? -1, forKey: journalNudgeKey) }
+    }
+
+    /// A deep link left by an intent or control (which may run in the widget extension)
+    /// for the app to open when it next comes to the foreground.
+    static var pendingURL: URL? {
+        get { AppGroup.defaults.string(forKey: pendingURLKey).flatMap(URL.init(string:)) }
+        set { AppGroup.defaults.set(newValue?.absoluteString, forKey: pendingURLKey) }
+    }
+
     /// 1 = Sunday, 2 = Monday, from the user's region settings.
     static var firstWeekday: Int { Calendar.current.firstWeekday }
 
