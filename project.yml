@@ -1,0 +1,93 @@
+# Generates Dissolve.xcodeproj. On your Mac run: scripts/setup-mac.sh
+# (or `xcodegen generate`). The .xcodeproj is not committed.
+name: Dissolve
+
+options:
+  bundleIdPrefix: com.lohith
+  deploymentTarget:
+    iOS: "27.0"
+    macOS: "27.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+configFiles:
+  Debug: Config/Project.xcconfig
+  Release: Config/Project.xcconfig
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    DEAD_CODE_STRIPPING: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+
+packages:
+  Engine:
+    path: Engine
+
+targets:
+  Dissolve:
+    type: application
+    platform: auto
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - App
+      - Features
+      - Models
+      - Shared
+    dependencies:
+      - package: Engine
+      - target: DissolveWidgets
+    settings:
+      base:
+        PRODUCT_NAME: Dissolve
+        PRODUCT_BUNDLE_IDENTIFIER: com.lohith.dissolve
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Dissolve
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        "INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphone*]": YES
+        "INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphone*]": YES
+        "INFOPLIST_KEY_UISupportedInterfaceOrientations[sdk=iphone*]": UIInterfaceOrientationPortrait
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphone*]": Config/Dissolve-iOS.entitlements
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": Config/Dissolve-macOS.entitlements
+
+  DissolveWidgets:
+    type: app-extension
+    platform: auto
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - Widgets
+      - Models
+      - Shared
+    dependencies:
+      - package: Engine
+    settings:
+      base:
+        PRODUCT_NAME: DissolveWidgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.lohith.dissolve.widgets
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: Config/DissolveWidgets-Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: Dissolve
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: NO
+        SKIP_INSTALL: YES
+        "LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]": "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphone*]": Config/DissolveWidgets-iOS.entitlements
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": Config/DissolveWidgets-macOS.entitlements
+
+schemes:
+  Dissolve:
+    build:
+      targets:
+        Dissolve: all
+    run:
+      config: Debug
+    archive:
+      config: Release

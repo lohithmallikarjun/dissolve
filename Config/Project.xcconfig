@@ -1,0 +1,3 @@
+// Shared build settings. Signing team lives in Signing.local.xcconfig
+// (created by scripts/setup-mac.sh, not committed).
+#include? "Signing.local.xcconfig"
