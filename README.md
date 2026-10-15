@@ -103,6 +103,20 @@ folder and reads the others' files; per record the newest edit wins and deletes 
 Photos go to `photos/`. Nothing needs a paid account or CloudKit. iCloud itself can take a minute or two
 to move files between devices.
 
+## Milestone 3: try it (countdowns + life)
+
+| # | Do | Expect |
+|---|---|---|
+| 1 | Life tab → **+** → **Birth Date & Eras** → set your birth date (lifespan 80) | Header rolls up to your "% remaining"; weeks grid fills |
+| 2 | Add an era (e.g. University, purple, with dates) | That band of the grid turns purple |
+| 3 | **+** → **New Countdown** → "Marathon", a date ~6 weeks away | A tile appears: days to go, progress ring |
+| 4 | Tap the tile | It zooms to a full-screen clock: days · hours · minutes · seconds ticking |
+| 5 | Make one for today with a time an hour away | On arrival: a celebration; it's archived the next day |
+| 6 | A birthday with **Repeats every year**; a "days since" with **Up from a date** | Rolls over each year / counts up |
+| 7 | Home Screen: **Countdown** (small; long-press → Edit to pick one), **Upcoming** (medium), **Life** (small, large) | In the last 24 h a timed countdown shows a live timer |
+| 8 | Lock Screen: countdown inline + circular, life gauge | |
+| 9 | Scroll the Life screen quickly | Stays smooth (the grid is one Canvas drawing) |
+
 ## Weekly reinstall (free account: apps expire after 7 days)
 
 `scripts/reinstall-iphone.sh` pulls, builds and reinstalls Dissolve on your iPhone over Wi-Fi.
