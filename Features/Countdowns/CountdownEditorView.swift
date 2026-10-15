@@ -78,8 +78,10 @@ struct CountdownEditorView: View {
                         }
                     }
                     HStack {
+                        let photoLabel = photoID == nil ? String(localized: "Add Background Photo")
+                                                        : String(localized: "Change Photo")
                         PhotosPicker(selection: $photoItem, matching: .images) {
-                            Label(photoID == nil ? "Add Background Photo" : "Change Photo", systemImage: "photo")
+                            Label(photoLabel, systemImage: "photo")
                         }
                         if photoID != nil {
                             Spacer()
