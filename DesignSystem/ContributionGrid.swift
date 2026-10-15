@@ -37,7 +37,9 @@ struct ContributionGrid<Popover: View>: View {
         (width - labelWidth - spacing - spacing * (columns - 1)) / columns
     }
 
-    private var scrolls: Bool { width > 0 && fitCell < minFitCell }
+    /// Starts scrolling (which always fits the proposed width) until the width is measured,
+    /// so an oversized first layout can't become the measured width.
+    private var scrolls: Bool { width == 0 || fitCell < minFitCell }
 
     private var cellSize: CGFloat {
         guard width > 0 else { return scrollCell }
