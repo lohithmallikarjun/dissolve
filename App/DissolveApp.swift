@@ -9,6 +9,9 @@ struct DissolveApp: App {
     @State private var syncFolder = SyncFolderStore()
     @State private var model = AppModel()
     @Environment(\.scenePhase) private var scenePhase
+    #if os(macOS) && DEBUG
+    @NSApplicationDelegateAdaptor(LaunchDiagnostics.self) private var launchDiagnostics
+    #endif
 
     init() {
         let made = SharedModelContainer.make()
@@ -25,6 +28,7 @@ struct DissolveApp: App {
                 .environment(syncFolder)
                 .environment(model)
                 .tint(.green)
+                .onAppear { print("Dissolve: root view appeared") }
                 .task { await model.runDayClock() }
                 #if DEBUG
                 .task { await WidgetGallery.renderIfRequested(container: container) }

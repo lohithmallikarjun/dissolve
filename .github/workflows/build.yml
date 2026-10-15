@@ -96,6 +96,13 @@ jobs:
         continue-on-error: true
         run: |
           APP="$DERIVED/Build/Products/Debug/Dissolve.app"
+          # Plain launch first, to compare.
+          "$APP/Contents/MacOS/Dissolve" > shots/mac-log-plain.txt 2>&1 &
+          PID=$!
+          sleep 10
+          screencapture -x shots/mac-plain.png
+          kill "$PID" || true
+          sleep 2
           "$APP/Contents/MacOS/Dissolve" -demoData -section progress > shots/mac-log.txt 2>&1 &
           PID=$!
           sleep 15
@@ -105,7 +112,8 @@ jobs:
           screencapture -x shots/mac.png
           kill "$PID" || true
           cat shots/mac-windows.txt
-          tail -20 shots/mac-log.txt
+          echo "--- plain"; cat shots/mac-log-plain.txt
+          echo "--- with args"; cat shots/mac-log.txt
 
       - name: Publish to screenshots branch
         if: github.event_name != 'pull_request'
