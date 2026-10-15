@@ -15,6 +15,10 @@ concurrency:
 permissions:
   contents: write
 
+defaults:
+  run:
+    shell: bash  # -eo pipefail, so xcodebuild failures aren't hidden by xcbeautify
+
 env:
   BUNDLE_ID: com.lohith.dissolve
   DERIVED: ${{ github.workspace }}/build
@@ -35,7 +39,16 @@ jobs:
           if [ -n "$XC" ]; then
             echo "DEPLOY_OVERRIDE=" >> "$GITHUB_ENV"
           else
-            XC=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
+            # Use the Xcode that matches the newest installed iOS simulator runtime.
+            IOS=$(xcrun simctl list runtimes -j | python3 -c '
+          import json, sys
+          rs = [r["version"] for r in json.load(sys.stdin)["runtimes"]
+                if r["platform"] == "iOS" and r["isAvailable"] and r["version"].startswith("26.")]
+          v = sorted(rs, key=lambda v: [int(x) for x in v.split(".")])[-1]
+          print(".".join(v.split(".")[:2]))')
+            echo "Newest iOS simulator runtime: $IOS"
+            XC=$(ls -d /Applications/Xcode_${IOS}*.app 2>/dev/null | sort -V | tail -1)
+            [ -n "$XC" ] || XC=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
             echo "::warning::No Xcode 27 on the runner; CI builds with $(basename "$XC") and a 26.0 deployment target."
             echo "DEPLOY_OVERRIDE=IPHONEOS_DEPLOYMENT_TARGET=26.0 MACOSX_DEPLOYMENT_TARGET=26.0" >> "$GITHUB_ENV"
           fi
@@ -55,7 +68,7 @@ jobs:
           xcodebuild -project Dissolve.xcodeproj -scheme Dissolve \
             -destination 'generic/platform=macOS' -derivedDataPath "$DERIVED" \
             CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= $DEPLOY_OVERRIDE \
-            build | xcbeautify || exit ${PIPESTATUS[0]}
+            build | xcbeautify
 
       - name: Pick and boot an iPhone simulator
         run: |
@@ -77,7 +90,7 @@ jobs:
           xcodebuild -project Dissolve.xcodeproj -scheme Dissolve \
             -destination "id=$UDID" -derivedDataPath "$DERIVED" \
             CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= $DEPLOY_OVERRIDE \
-            build | xcbeautify || exit ${PIPESTATUS[0]}
+            build | xcbeautify
 
       - name: iOS screenshots
         run: |
