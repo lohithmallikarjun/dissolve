@@ -26,13 +26,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode 27
+      - name: Select Xcode
+        # Prefer Xcode 27 (the real iOS/macOS 27 target). Until GitHub's images ship it,
+        # fall back to the newest Xcode 26 and build this CI copy with a 26.0 deployment target.
         run: |
           ls -d /Applications/Xcode*.app
           XC=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | sort -V | tail -1)
-          if [ -z "$XC" ]; then
-            echo "::error::No Xcode 27 on this runner image (needed for the iOS/macOS 27 target)."
-            exit 1
+          if [ -n "$XC" ]; then
+            echo "DEPLOY_OVERRIDE=" >> "$GITHUB_ENV"
+          else
+            XC=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
+            echo "::warning::No Xcode 27 on the runner; CI builds with $(basename "$XC") and a 26.0 deployment target."
+            echo "DEPLOY_OVERRIDE=IPHONEOS_DEPLOYMENT_TARGET=26.0 MACOSX_DEPLOYMENT_TARGET=26.0" >> "$GITHUB_ENV"
           fi
           sudo xcode-select -s "$XC"
           xcodebuild -version
@@ -49,7 +54,7 @@ jobs:
         run: |
           xcodebuild -project Dissolve.xcodeproj -scheme Dissolve \
             -destination 'generic/platform=macOS' -derivedDataPath "$DERIVED" \
-            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= $DEPLOY_OVERRIDE \
             build | xcbeautify || exit ${PIPESTATUS[0]}
 
       - name: Pick and boot an iPhone simulator
@@ -57,8 +62,9 @@ jobs:
           UDID=$(xcrun simctl list devices available -j | python3 -c '
           import json, sys
           devices = json.load(sys.stdin)["devices"]
-          phones = [d for runtime, ds in devices.items() if "iOS-27" in runtime
-                    for d in ds if d["name"].startswith("iPhone")]
+          runtimes = sorted((r for r in devices if ".iOS-" in r),
+                            key=lambda r: [int(x) for x in r.rsplit("iOS-", 1)[1].split("-")])
+          phones = [d for d in devices[runtimes[-1]] if d["name"].startswith("iPhone")]
           pro = [d for d in phones if d["name"].endswith("Pro")]
           print(sorted(pro or phones, key=lambda d: d["name"])[-1]["udid"])')
           echo "UDID=$UDID" >> "$GITHUB_ENV"
@@ -70,7 +76,7 @@ jobs:
         run: |
           xcodebuild -project Dissolve.xcodeproj -scheme Dissolve \
             -destination "id=$UDID" -derivedDataPath "$DERIVED" \
-            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= $DEPLOY_OVERRIDE \
             build | xcbeautify || exit ${PIPESTATUS[0]}
 
       - name: iOS screenshots
