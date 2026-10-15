@@ -11,6 +11,7 @@ enum WidgetGallery {
         let snapshot = DashboardLoader.load(context: container.mainContext)
         let journal = JournalSnapshot.load(context: container.mainContext)
         let time = TimeSnapshot.load(context: container.mainContext)
+        let stats = StatsSnapshot.load(context: container.mainContext)
         let first = snapshot.habits.first
         let water = snapshot.habits.first { $0.kind == .quantity } ?? first
 
@@ -41,6 +42,8 @@ enum WidgetGallery {
             ("life-small", CGSize(width: 170, height: 170), AnyView(LifeSmallView(life: time.life))),
             ("life-large", CGSize(width: 364, height: 382), AnyView(LifeYearsView(life: time.life))),
             ("lock-circular-life", CGSize(width: 76, height: 76), AnyView(LifeCircularView(life: time.life))),
+            ("stats-small", CGSize(width: 170, height: 170), AnyView(StatsStrengthSmallView(stats: stats))),
+            ("stats-medium", CGSize(width: 364, height: 170), AnyView(StatsWeekMediumView(stats: stats))),
         ]
 
         let folder = URL.documentsDirectory.appending(path: "widget-gallery")
@@ -61,6 +64,20 @@ enum WidgetGallery {
                 if let data = renderer.uiImage?.pngData() {
                     try? data.write(to: folder.appending(path: "\(name)-\(scheme == .dark ? "dark" : "light").png"))
                 }
+            }
+        }
+        // The full Stats screen as one tall image (screenshots can't scroll).
+        for scheme in [ColorScheme.light, .dark] {
+            let page = StatsCards(stats: stats)
+                .padding(16)
+                .frame(width: 393)
+                .background(Color(.systemBackground))
+                .environment(\.colorScheme, scheme)
+                .tint(.green)
+            let renderer = ImageRenderer(content: page)
+            renderer.scale = 3
+            if let data = renderer.uiImage?.pngData() {
+                try? data.write(to: folder.appending(path: "stats-page-\(scheme == .dark ? "dark" : "light").png"))
             }
         }
         print("Dissolve: widget gallery written to \(folder.path)")

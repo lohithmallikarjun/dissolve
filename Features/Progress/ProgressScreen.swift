@@ -20,7 +20,8 @@ struct ProgressScreen: View {
 
     @Environment(AppModel.self) private var model
     @Query(filter: #Predicate<Habit> { $0.archivedAt == nil }, sort: \Habit.sortOrder) private var habits: [Habit]
-    @State private var mode: Mode = .grid
+    // CI screenshots open Stats with `-progressMode:stats`.
+    @State private var mode: Mode = ProcessInfo.processInfo.arguments.contains("-progressMode:stats") ? .stats : .grid
     @State private var range: Range = .year
     @State private var selection: LocalDate?
     @AppStorage("grid.countJournal") private var countJournal = false
@@ -52,8 +53,7 @@ struct ProgressScreen: View {
                         }
                     }
                 case .stats:
-                    ComingSoonView(title: "Statistics", symbol: "chart.xyaxis.line", milestone: 5)
-                        .frame(minHeight: 300)
+                    StatsView()
                 }
             }
             .padding(Metrics.margin)

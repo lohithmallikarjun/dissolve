@@ -7,6 +7,7 @@ struct DissolveWidgetsBundle: WidgetBundle {
         HabitWidgetsBundle().body
         TimeWidgetsBundle().body
         JournalWidgetsBundle().body
+        StatsWidget()
         DiagnosticWidget()
         #if os(iOS)
         ControlsBundle().body

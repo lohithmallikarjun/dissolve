@@ -238,6 +238,29 @@ public struct HabitEngine: Sendable {
         /// Contribution to strength; nil = ignored.
         var value: Double?
         var multiplier: Double
+        /// The day this unit is settled (its day, or the last day of its week span).
+        var end: LocalDate = LocalDate(dayNumber: 0)
+    }
+
+    /// Strength as it stood at the end of each day from `from` through `to`.
+    public func strengthSeries(from: LocalDate, to: LocalDate) -> [Double] {
+        guard from <= to else { return [] }
+        var score = 0.0
+        var index = 0
+        var result: [Double] = []
+        result.reserveCapacity(from.days(to: to) + 1)
+        var day = from
+        while day <= to {
+            while index < units.count, units[index].end <= day {
+                if let value = units[index].value {
+                    score = score * units[index].multiplier + value * (1 - units[index].multiplier)
+                }
+                index += 1
+            }
+            result.append(score)
+            day = day.adding(days: 1)
+        }
+        return result
     }
 
     private static func multiplier(dailyFrequency f: Double, unitDays: Double) -> Double {
@@ -268,6 +291,8 @@ public struct HabitEngine: Sendable {
                 let required = min(perWeek, possible - skipped)
                 let isCurrent = cursor > end && end == today
                 let m = Self.multiplier(dailyFrequency: version.rule.dailyFrequency, unitDays: 7)
+                let settled = min(cursor.adding(days: -1), end)
+                let before = result.count
                 if required <= 0 {
                     result.append(Unit(outcome: .neutral, value: nil, multiplier: m))
                 } else if done >= required {
@@ -282,6 +307,7 @@ public struct HabitEngine: Sendable {
                 } else {
                     result.append(Unit(outcome: .miss, value: Double(done) / Double(required), multiplier: m))
                 }
+                for i in before..<result.count { result[i].end = settled }
                 day = cursor
                 continue
             }
@@ -290,11 +316,11 @@ public struct HabitEngine: Sendable {
             let m = Self.multiplier(dailyFrequency: f, unitDays: 1 / f)
             switch status(on: day) {
             case .completed where version.isDue(on: day):
-                result.append(Unit(outcome: .hit, value: 1, multiplier: m))
+                result.append(Unit(outcome: .hit, value: 1, multiplier: m, end: day))
             case .partial where day != today:
-                result.append(Unit(outcome: .miss, value: progress(on: day), multiplier: m))
+                result.append(Unit(outcome: .miss, value: progress(on: day), multiplier: m, end: day))
             case .missed:
-                result.append(Unit(outcome: .miss, value: 0, multiplier: m))
+                result.append(Unit(outcome: .miss, value: 0, multiplier: m, end: day))
             default:
                 break
             }

@@ -88,6 +88,9 @@ jobs:
             launch -demoData -section:progress
             sleep 7
             xcrun simctl io "$UDID" screenshot "shots/ios-progress-$mode.png"
+            launch -demoData -section:progress -progressMode:stats
+            sleep 7
+            xcrun simctl io "$UDID" screenshot "shots/ios-stats-$mode.png"
             launch -demoData -section:journal
             sleep 6
             xcrun simctl io "$UDID" screenshot "shots/ios-journal-$mode.png"
