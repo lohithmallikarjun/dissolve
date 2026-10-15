@@ -67,6 +67,23 @@ On the **Milestone 0** screen:
 | 8 | On the Mac: pick the same folder, **Write test file**, then **Read test files** | Rows for both devices; message says “from another device ✓” |
 | 9 | Back on the iPhone: **Read test files** | The Mac's row appears (may take a minute; tap Read again) |
 
+## Milestone 1: try it
+
+| # | Do | Expect |
+|---|---|---|
+| 1 | Today → **+** → name "Meditate", pick a symbol and colour, Save | A card appears |
+| 2 | Tap the card | Checkmark, haptic, streak rolls to 1, ring at the top fills |
+| 3 | Add "Water": type **Amount**, goal 8, unit glasses | Each tap adds 1; the ring fills |
+| 4 | Long-press a card | Skip (rest day), Edit Day…, Clear, Details, Edit Habit |
+| 5 | Tap **‹** next to the date | Yesterday; tap cards to fill in past days |
+| 6 | Progress tab | Year grid (scroll left for older weeks); tap a day → popover; tap again → edit it |
+| 7 | Tap a habit's mini grid | Detail: streak, best, strength %, year grid, notes |
+| 8 | Edit a habit's schedule | "New schedule from" date; older days keep the old schedule |
+| 9 | Home Screen → add **Habit**, **Today's Habits**, **Consistency**, **Year Grid** widgets | Tapping a widget's check updates it and the app |
+| 10 | Lock Screen → add the circular and rectangular Dissolve widgets | % ring, next habit, last 7 days |
+| 11 | Mac: sidebar, ⌘1–4, ⌘← / ⌘→, click a grid day → inspector | |
+| 12 | Settings (gear) → Day ends at | Default 3 am |
+
 ## Weekly reinstall (free account: apps expire after 7 days)
 
 `scripts/reinstall-iphone.sh` pulls, builds and reinstalls Dissolve on your iPhone over Wi-Fi.
