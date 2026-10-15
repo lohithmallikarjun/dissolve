@@ -39,9 +39,10 @@ final class AppModel {
         let today = AppSettings.today()
         self.today = today
         day = today
-        if let tab = ProcessInfo.processInfo.arguments.firstIndex(of: "-section")
-            .flatMap({ ProcessInfo.processInfo.arguments.dropFirst($0 + 1).first })
-            .flatMap(AppSection.init(rawValue:)) {
+        // CI screenshots: `-section:progress`. One token, so macOS doesn't treat the value as a file to open.
+        if let tab = ProcessInfo.processInfo.arguments
+            .first(where: { $0.hasPrefix("-section:") })
+            .flatMap({ AppSection(rawValue: String($0.dropFirst("-section:".count))) }) {
             section = tab
         }
     }

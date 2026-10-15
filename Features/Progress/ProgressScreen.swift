@@ -177,8 +177,8 @@ struct HabitMiniCard: View {
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.tertiary)
             }
-            MiniGrid(snapshot: .habit(engine, weeks: 20), color: habit.color, spacing: 2)
-                .frame(height: 64)
+            MiniGrid(snapshot: .habit(engine, weeks: 26), color: habit.color, spacing: 2)
+                .frame(maxWidth: .infinity)
         }
         .card(padding: 16)
         .contentShape(.rect)
