@@ -39,6 +39,8 @@ jobs:
       - name: Generate project
         run: |
           brew install xcodegen
+          # Without Xcode 27, lower this CI copy's target so the iOS 26 simulators are eligible.
+          if [ -n "$DEPLOY_OVERRIDE" ]; then sed -i '' 's/"27.0"/"26.0"/' project.yml; fi
           xcodegen generate
 
       - name: Build for macOS
