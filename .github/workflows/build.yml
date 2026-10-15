@@ -96,10 +96,16 @@ jobs:
         continue-on-error: true
         run: |
           APP="$DERIVED/Build/Products/Debug/Dissolve.app"
-          open "$APP" --args -demoData -section progress
-          sleep 12
+          "$APP/Contents/MacOS/Dissolve" -demoData -section progress > shots/mac-log.txt 2>&1 &
+          PID=$!
+          sleep 15
+          osascript -e 'tell application "System Events" to get {name, position, size} of every window of (first process whose unix id is '"$PID"')' > shots/mac-windows.txt 2>&1 || true
+          ps -o pid,%cpu,state,command -p "$PID" >> shots/mac-windows.txt || echo "process exited" >> shots/mac-windows.txt
+          sample "$PID" 2 -file shots/mac-sample.txt >/dev/null 2>&1 || true
           screencapture -x shots/mac.png
-          osascript -e 'quit app "Dissolve"' || true
+          kill "$PID" || true
+          cat shots/mac-windows.txt
+          tail -20 shots/mac-log.txt
 
       - name: Publish to screenshots branch
         if: github.event_name != 'pull_request'

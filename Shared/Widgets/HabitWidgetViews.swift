@@ -141,7 +141,7 @@ struct ChecklistWidgetView: View {
             }
             if showsStrip {
                 MiniGrid(snapshot: snapshot.overall.suffix(weeks: 12), color: .green, spacing: 3)
-                    .frame(height: 70)
+                    .frame(maxWidth: .infinity, maxHeight: 96)
             }
         }
     }

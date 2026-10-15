@@ -19,19 +19,65 @@ struct ContributionGrid<Popover: View>: View {
     @State private var appeared = false
 
     let spacing: CGFloat = 3
-    let labelWidth: CGFloat = 26
+    let labelWidth: CGFloat = 22
+    let monthRowHeight: CGFloat = 14
+
+    #if os(iOS)
+    /// Below this the year doesn't fit; the grid scrolls sideways instead, today at the right.
+    let minFitCell: CGFloat = 9
+    let scrollCell: CGFloat = 13
+    #else
+    let minFitCell: CGFloat = 7
+    let scrollCell: CGFloat = 11
+    #endif
+
+    private var columns: CGFloat { CGFloat(snapshot.layout.weeks) }
+
+    private var fitCell: CGFloat {
+        (width - labelWidth - spacing - spacing * (columns - 1)) / columns
+    }
+
+    private var scrolls: Bool { width > 0 && fitCell < minFitCell }
 
     private var cellSize: CGFloat {
-        let columns = CGFloat(snapshot.layout.weeks)
-        let available = width - labelWidth - spacing * (columns - 1)
-        return min(max(available / columns, 6), 30)
+        guard width > 0 else { return scrollCell }
+        return scrolls ? scrollCell : min(fitCell, 30)
     }
+
+    private var columnsWidth: CGFloat { columns * cellSize + (columns - 1) * spacing }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            monthLabels
             HStack(alignment: .top, spacing: spacing) {
                 weekdayLabels
+                    .padding(.top, monthRowHeight + 6)
+                if scrolls {
+                    ScrollView(.horizontal, showsIndicators: false) { columnsView }
+                        .defaultScrollAnchor(.trailing)
+                } else {
+                    columnsView
+                }
+            }
+            HStack {
+                Spacer()
+                GridLegend(color: color)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear { width = proxy.size.width }
+                    .onChange(of: proxy.size.width) { _, new in width = new }
+            }
+        }
+        .onAppear { appeared = true }
+    }
+
+    private var columnsView: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            monthLabels
+            HStack(alignment: .top, spacing: spacing) {
                 ForEach(0..<snapshot.layout.weeks, id: \.self) { column in
                     VStack(spacing: spacing) {
                         ForEach(0..<7, id: \.self) { row in
@@ -46,25 +92,19 @@ struct ContributionGrid<Popover: View>: View {
                         value: appeared)
                 }
             }
-            HStack {
-                Spacer()
-                GridLegend(color: color)
-            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
-        .onAppear { appeared = true }
+        .frame(width: columnsWidth, alignment: .leading)
     }
 
     private var monthLabels: some View {
         ZStack(alignment: .leading) {
-            Color.clear.frame(height: 14)
+            Color.clear.frame(width: columnsWidth, height: monthRowHeight)
             ForEach(snapshot.layout.monthLabels, id: \.self) { label in
                 Text(Calendar.current.shortMonthSymbols[label.month - 1])
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .fixedSize()
-                    .offset(x: labelWidth + spacing + CGFloat(label.column) * (cellSize + spacing))
+                    .offset(x: CGFloat(label.column) * (cellSize + spacing))
             }
         }
         .accessibilityHidden(true)
@@ -76,7 +116,7 @@ struct ContributionGrid<Popover: View>: View {
                 Text(row % 2 == 0 ? Calendar.current.veryShortWeekdaySymbols[weekday - 1] : "")
                     .font(.system(size: max(min(cellSize * 0.7, 11), 7)))
                     .foregroundStyle(.secondary)
-                    .frame(width: labelWidth - spacing, height: cellSize, alignment: .leading)
+                    .frame(width: labelWidth, height: cellSize, alignment: .leading)
             }
         }
         .accessibilityHidden(true)

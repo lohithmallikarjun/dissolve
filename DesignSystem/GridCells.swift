@@ -70,6 +70,12 @@ struct MiniGrid: View {
     let color: Color
     var spacing: CGFloat = 2
 
+    /// Width ÷ height, assuming spacing ≈ 20 % of a cell.
+    static func aspectRatio(weeks: Int) -> CGFloat {
+        let w = CGFloat(weeks)
+        return (w + (w - 1) * 0.2) / (7 + 6 * 0.2)
+    }
+
     var body: some View {
         GeometryReader { proxy in
             let columns = CGFloat(snapshot.layout.weeks)
@@ -89,8 +95,9 @@ struct MiniGrid: View {
                     }
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .aspectRatio(Self.aspectRatio(weeks: snapshot.layout.weeks), contentMode: .fit)
         .accessibilityHidden(true)
     }
 }

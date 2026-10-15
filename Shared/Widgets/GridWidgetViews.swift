@@ -59,11 +59,13 @@ struct GridLargeView: View {
                     .foregroundStyle(.orange)
                     .numberStyle()
             }
-            MiniGrid(snapshot: grid.suffix(weeks: 26), color: color, spacing: 2.5)
-            MiniGrid(snapshot: grid, color: color, spacing: 1.5)
-                .frame(height: 64)
+            MiniGrid(snapshot: grid.suffix(weeks: 20), color: color, spacing: 3)
+                .frame(maxWidth: .infinity)
+            Spacer(minLength: 0)
+            Text("Past year").font(.caption2).foregroundStyle(.secondary)
+            MiniGrid(snapshot: grid, color: color, spacing: 1)
+                .frame(maxWidth: .infinity)
             HStack {
-                Text("Past year").font(.caption2).foregroundStyle(.secondary)
                 Spacer()
                 GridLegend(color: color, size: 8)
             }

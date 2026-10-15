@@ -29,15 +29,10 @@ struct TodayView: View {
                     Button {
                         withAnimation(.snappy) { model.section = .progress }
                     } label: {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Last 12 weeks").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-                            MiniGrid(snapshot: .overall(engines: engines, today: today, weeks: 12), color: .green, spacing: 3)
-                                .frame(height: 96)
-                        }
-                        .card(padding: 16)
+                        RecentStrip(engines: engines, today: today)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Last 12 weeks. Opens Progress.")
+                    .accessibilityHint("Opens Progress")
 
                     ForEach(Array(zip(habits, engines)), id: \.0.id) { habit, engine in
                         HabitCard(habit: habit, engine: engine, day: day) { action in
@@ -87,6 +82,46 @@ struct TodayView: View {
                 .buttonStyle(.borderedProminent)
         }
         .padding(.top, 40)
+    }
+}
+
+/// The last 12 weeks across all habits, with the perfect-day streak. Taps through to Progress.
+private struct RecentStrip: View {
+    let engines: [HabitEngine]
+    let today: LocalDate
+
+    var body: some View {
+        let streak = Overall.perfectDayStreak(engines: engines, today: today)
+        let week = (0..<7).compactMap { Overall.fraction(on: today.adding(days: -$0), engines: engines) }
+        let weekAverage = week.isEmpty ? 0 : week.reduce(0, +) / Double(week.count)
+        HStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Last 12 weeks")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Label {
+                    Text(streak, format: .number)
+                        .contentTransition(.numericText(value: Double(streak)))
+                } icon: {
+                    Image(systemName: "flame.fill").foregroundStyle(.orange)
+                }
+                .font(.title2.weight(.bold))
+                .numberStyle()
+                Text(streak == 1 ? "perfect day" : "perfect days")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("\(Int((weekAverage * 100).rounded()))% this week")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .numberStyle()
+            }
+            .fixedSize()
+            MiniGrid(snapshot: .overall(engines: engines, today: today, weeks: 12), color: .green, spacing: 3)
+                .frame(maxWidth: .infinity, maxHeight: 120)
+        }
+        .card(padding: 16)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Last 12 weeks. \(streak) perfect days in a row. \(Int((weekAverage * 100).rounded())) percent this week.")
     }
 }
 
