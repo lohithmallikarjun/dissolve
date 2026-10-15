@@ -33,6 +33,11 @@ public struct LifeGrid: Sendable {
     public struct Cell: Hashable, Sendable {
         public let row: Int
         public let column: Int
+
+        public init(row: Int, column: Int) {
+            self.row = row
+            self.column = column
+        }
     }
 
     /// The birthday that starts row `age`. 29 February → 28 February in other years.
