@@ -60,6 +60,16 @@ struct StatsSnapshot: Sendable {
     /// Completion fraction per day this week and last week (nil = nothing due / future).
     let thisWeekDays: [Double?]
     let lastWeekDays: [Double?]
+    /// Days since the first habit started; patterns wait for 30.
+    let daysOfData: Int
+    /// Plain-language patterns (correlations, not causes), strongest first.
+    let patterns: [Pattern]
+
+    struct Pattern: Identifiable, Sendable {
+        var id: String { text }
+        let symbol: String
+        let text: String
+    }
 
     var hasHabits: Bool { !habits.isEmpty }
 
@@ -109,6 +119,29 @@ struct StatsSnapshot: Sendable {
             }
         }
 
+        // Patterns over the last 90 days.
+        var patterns: [Pattern] = []
+        let from = today.adding(days: -90)
+        let splits = zip(habits, engines).compactMap { habit, engine in
+            Patterns.moodSplit(engine, moods: moods, from: from, to: today).map { (habit.name, $0) }
+        }
+        .filter { abs($0.1.difference) >= 0.3 }
+        .sorted { abs($0.1.difference) > abs($1.1.difference) }
+        for (name, split) in splits.prefix(2) {
+            let with = split.withHabit.formatted(.number.precision(.fractionLength(1)))
+            let without = split.withoutHabit.formatted(.number.precision(.fractionLength(1)))
+            patterns.append(Pattern(
+                symbol: split.difference > 0 ? "face.smiling" : "cloud",
+                text: split.difference > 0
+                    ? String(localized: "Your mood tends to be higher on days you do \(name) (\(with) vs \(without)).")
+                    : String(localized: "Your mood tends to be lower on days you do \(name) (\(with) vs \(without)).")))
+        }
+        for pair in Patterns.coOccurrence(engines, from: from, to: today.adding(days: -1)).prefix(2) {
+            patterns.append(Pattern(
+                symbol: "link",
+                text: String(localized: "\(habits[pair.first].name) and \(habits[pair.second].name) often happen on the same days (\(pair.together) times).")))
+        }
+
         return StatsSnapshot(
             today: today, strength: strength, habits: habitStats, weekly: weekly, monthly: monthly,
             weekdays: weekdays, journalMonthly: journalMonthly, mood: mood,
@@ -116,7 +149,8 @@ struct StatsSnapshot: Sendable {
             journalDays30: recent.count, averageWords30: averageWords,
             thisWeek: Stats.tally(engines, from: thisWeekStart, to: today),
             lastWeek: Stats.tally(engines, from: lastWeekStart, to: thisWeekStart.adding(days: -1)),
-            thisWeekDays: days(from: thisWeekStart), lastWeekDays: days(from: lastWeekStart))
+            thisWeekDays: days(from: thisWeekStart), lastWeekDays: days(from: lastWeekStart),
+            daysOfData: Patterns.daysOfData(engines), patterns: patterns)
     }
 
     static func load(context: ModelContext, today: LocalDate = AppSettings.today()) -> StatsSnapshot {
@@ -199,6 +233,14 @@ enum StatsInsights {
         let bestDay = Calendar.current.weekdaySymbols[best.0.weekday - 1]
         let worstDay = Calendar.current.weekdaySymbols[worst.0.weekday - 1]
         return String(localized: "\(bestDay)s are your strongest day (\(percent(best.1))); \(worstDay)s slip to \(percent(worst.1)).")
+    }
+
+    static func patterns(_ s: StatsSnapshot) -> String {
+        if s.daysOfData < 30 {
+            return String(localized: "Patterns appear after 30 days — \(max(30 - s.daysOfData, 0)) to go.")
+        }
+        return s.patterns.isEmpty ? String(localized: "No strong patterns in the last 90 days.")
+                                  : String(localized: "Things that tend to go together in the last 90 days.")
     }
 
     static func journal(_ s: StatsSnapshot) -> String {

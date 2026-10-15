@@ -43,6 +43,7 @@ struct HabitCard: View {
                 } icon: {
                     Image(systemName: "flame.fill")
                         .foregroundStyle(streak.count > 0 ? .orange : .secondary)
+                        .symbolEffect(.bounce, value: streak.count)
                 }
                 .font(.headline)
                 .numberStyle()
@@ -73,20 +74,31 @@ struct HabitCard: View {
         let color = habit.color
         switch habit.kind {
         case .binary:
+            let done = status == .completed
             ZStack {
-                Circle().fill(status == .completed ? color : color.opacity(0.15))
-                Image(systemName: status == .completed ? "checkmark" : habit.symbol)
+                Circle().fill(done ? color : color.opacity(0.15))
+                    .animation(.snappy, value: done)
+                Image(systemName: habit.symbol)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(color)
+                    .opacity(done ? 0 : 1)
+                    .scaleEffect(done ? 0.4 : 1)
+                    .animation(.snappy, value: done)
+                // The checkmark draws itself on.
+                Image(systemName: "checkmark")
                     .font(.title3.weight(.bold))
-                    .foregroundStyle(status == .completed ? .white : color)
-                    .contentTransition(.symbolEffect(.replace))
+                    .foregroundStyle(.white)
+                    .symbolEffect(.drawOn, isActive: !done)
             }
             .overlay { skippedOverlay }
         case .quantity, .timed:
             ProgressRing(progress: progress, color: color, lineWidth: 5) {
-                Image(systemName: progress >= 1 ? "checkmark" : habit.symbol)
+                // Symbols with variable layers fill up with progress.
+                Image(systemName: progress >= 1 ? "checkmark" : habit.symbol, variableValue: progress)
                     .font(.body.weight(.semibold))
                     .foregroundStyle(color)
                     .contentTransition(.symbolEffect(.replace))
+                    .symbolEffect(.bounce, value: value)
             }
             .overlay { skippedOverlay }
         case .limit:

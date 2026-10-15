@@ -8,6 +8,7 @@ struct JournalEntryEditor: View {
     @Bindable var entry: JournalEntry
     @Environment(\.modelContext) private var context
     @State private var saveTask: Task<Void, Never>?
+    @FocusState private var focusedBlock: UUID?
 
     var body: some View {
         ScrollView {
@@ -16,7 +17,7 @@ struct JournalEntryEditor: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
                 ForEach(entry.orderedBlocks) { block in
-                    BlockEditor(block: block, entry: entry, onEdit: scheduleSave)
+                    BlockEditor(block: block, entry: entry, focus: $focusedBlock, onEdit: scheduleSave)
                 }
                 Text("\(entry.wordCount) words")
                     .font(.caption)
@@ -29,6 +30,16 @@ struct JournalEntryEditor: View {
             .frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom) {
+            if let id = focusedBlock, let block = entry.blocks.first(where: { $0.id == id }) {
+                FormattingBar(block: block) {
+                    focusedBlock = nil
+                } onEdit: { scheduleSave() }
+                .padding(.bottom, 8)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.smooth, value: focusedBlock)
         .navigationTitle(entry.localDate?.relativeName(today: AppSettings.today()) ?? "")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -55,6 +66,7 @@ struct JournalEntryEditor: View {
 private struct BlockEditor: View {
     @Bindable var block: EntryBlock
     @Bindable var entry: JournalEntry
+    var focus: FocusState<UUID?>.Binding
     let onEdit: () -> Void
 
     var body: some View {
@@ -104,6 +116,7 @@ private struct BlockEditor: View {
         TextField(block.placeholder, text: $block.text, axis: .vertical)
             .lineLimit(3...)
             .textFieldStyle(.plain)
+            .focused(focus, equals: block.id)
             .privacySensitive()
             .onChange(of: block.text) { onEdit() }
     }
@@ -348,5 +361,51 @@ private struct HabitSummaryBlockView: View {
                 }
             }
         }
+    }
+}
+
+/// Floating glass formatting bar: quick inserts for the text you're writing.
+private struct FormattingBar: View {
+    @Bindable var block: EntryBlock
+    let onDone: () -> Void
+    let onEdit: () -> Void
+    @Namespace private var glass
+
+    var body: some View {
+        GlassEffectContainer(spacing: 8) {
+            HStack(spacing: 8) {
+                button("list.bullet", "Bullet") { appendLine("• ") }
+                button("checklist", "Checkbox") { appendLine("☐ ") }
+                button("clock", "Time") {
+                    append(Date.now.formatted(date: .omitted, time: .shortened) + " ")
+                }
+                button("quote.opening", "Quote") { appendLine("“") }
+                Spacer(minLength: 0)
+                button("keyboard.chevron.compact.down", "Done", action: onDone)
+            }
+        }
+        .padding(.horizontal, Metrics.margin)
+    }
+
+    private func button(_ symbol: String, _ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.body.weight(.medium))
+                .frame(width: 44, height: 44)
+        }
+        .buttonStyle(.plain)
+        .glassEffect(.regular.interactive(), in: .circle)
+        .glassEffectID(symbol, in: glass)
+        .accessibilityLabel(Text(label))
+    }
+
+    private func append(_ text: String) {
+        block.text += text
+        onEdit()
+    }
+
+    private func appendLine(_ prefix: String) {
+        block.text += (block.text.isEmpty || block.text.hasSuffix("\n") ? "" : "\n") + prefix
+        onEdit()
     }
 }

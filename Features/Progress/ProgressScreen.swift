@@ -24,6 +24,7 @@ struct ProgressScreen: View {
     @State private var mode: Mode = ProcessInfo.processInfo.arguments.contains("-progressMode:stats") ? .stats : .grid
     @State private var range: Range = .year
     @State private var selection: LocalDate?
+    @Namespace private var zoom
     @AppStorage("grid.countJournal") private var countJournal = false
     @Query private var journalEntries: [JournalEntry]
 
@@ -48,6 +49,9 @@ struct ProgressScreen: View {
                             HabitMiniCard(habit: habit, engine: engine)
                         }
                         .buttonStyle(.plain)
+                        #if os(iOS)
+                        .matchedTransitionSource(id: habit.id, in: zoom)
+                        #endif
                         .scrollTransition(.animated(.smooth)) { content, phase in
                             content.opacity(phase.isIdentity ? 1 : 0.6).scaleEffect(phase.isIdentity ? 1 : 0.96)
                         }
@@ -59,7 +63,12 @@ struct ProgressScreen: View {
             .padding(Metrics.margin)
         }
         .navigationTitle("Progress")
-        .navigationDestination(for: Habit.self) { HabitDetailView(habit: $0) }
+        .navigationDestination(for: Habit.self) { habit in
+            HabitDetailView(habit: habit)
+                #if os(iOS)
+                .navigationTransition(.zoom(sourceID: habit.id, in: zoom))
+                #endif
+        }
         #if os(macOS)
         .inspector(isPresented: Binding(get: { selection != nil }, set: { if !$0 { selection = nil } })) {
             if let selection {
@@ -84,12 +93,7 @@ struct ProgressScreen: View {
                         .contentTransition(.numericText(value: Double(streak)))
                 }
                 Spacer()
-                Picker("Range", selection: $range.animation(.smooth)) {
-                    ForEach(Range.allCases) { Text($0.title).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
+                GlassSegmented(options: Range.allCases.map { (value: $0, title: $0.title) }, selection: $range)
             }
             ContributionGrid(
                 snapshot: .overall(engines: engines, today: today, weeks: range.rawValue,

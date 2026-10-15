@@ -12,6 +12,9 @@ struct TodayView: View {
     @State private var addingHabit = false
     @State private var detailHabit: Habit?
     @State private var dayEditorHabit: Habit?
+    @State private var celebration = 0
+    @Namespace private var zoom
+    @Query(sort: \JournalEntry.date, order: .reverse) private var entries: [JournalEntry]
     #if os(macOS)
     @State private var selectedIndex = 0
     @FocusState private var focused: Bool
@@ -47,6 +50,9 @@ struct TodayView: View {
                             case .editDay: dayEditorHabit = habit
                             }
                         }
+                        #if os(iOS)
+                        .matchedTransitionSource(id: habit.id, in: zoom)
+                        #endif
                         .scrollTransition(.animated(.smooth)) { content, phase in
                             content.opacity(phase.isIdentity ? 1 : 0.6).scaleEffect(phase.isIdentity ? 1 : 0.96)
                         }
@@ -63,8 +69,23 @@ struct TodayView: View {
                 }
             }
             .padding(Metrics.margin)
+            .padding(.bottom, 72)  // room for the Journal pill
             .frame(maxWidth: 720)
             .frame(maxWidth: .infinity)
+        }
+        .overlay(alignment: .bottom) {
+            let written = entries.contains { $0.date == today.description && ($0.wordCount > 0 || !$0.photoIDs.isEmpty) }
+            let streak = JournalStats.streak(
+                entryDates: Set(entries.filter { $0.wordCount > 0 || !$0.photoIDs.isEmpty }.compactMap(\.localDate)),
+                today: today)
+            JournalPill(written: written, streak: streak) { model.openJournal() }
+                .padding(.bottom, 12)
+        }
+        .overlay {
+            if celebration > 0 { DayCompleteCelebration(trigger: celebration) }
+        }
+        .onChange(of: fraction >= 1) { wasDone, isDone in
+            if isDone && !wasDone && day == today && !habits.isEmpty { celebration += 1 }
         }
         #if os(macOS)
         // Space toggles the selected habit; ↑ / ↓ move the selection.
@@ -103,6 +124,9 @@ struct TodayView: View {
         }
         .navigationDestination(item: $detailHabit) { habit in
             HabitDetailView(habit: habit)
+                #if os(iOS)
+                .navigationTransition(.zoom(sourceID: habit.id, in: zoom))
+                #endif
         }
     }
 

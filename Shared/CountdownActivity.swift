@@ -41,10 +41,13 @@ enum CountdownActivities {
             start(id: c.id, title: c.title, symbol: c.symbol, colorName: c.colorName, target: c.target)
         }
         let live = Set(countdowns.filter { $0.isTimed && $0.target > now.addingTimeInterval(-3600) }.map { $0.id.uuidString })
+        Task.detached { await endAll(except: live) }
+    }
+
+    /// Ends activities for countdowns that are finished, archived or deleted.
+    nonisolated static func endAll(except live: Set<String>) async {
         for activity in Activity<CountdownActivityAttributes>.activities where !live.contains(activity.attributes.countdownID) {
-            Task {
-                await activity.end(ActivityContent(state: activity.content.state, staleDate: nil), dismissalPolicy: .immediate)
-            }
+            await activity.end(nil, dismissalPolicy: .immediate)
         }
     }
 }

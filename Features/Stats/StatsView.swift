@@ -25,6 +25,7 @@ struct StatsCards: View {
             StreaksCard(stats: stats)
             WeekdayCard(stats: stats)
             JournalStatsCard(stats: stats)
+            PatternsCard(stats: stats)
         }
     }
 }
@@ -297,6 +298,34 @@ private struct JournalStatsCard: View {
                     AxisMarks(values: .automatic(desiredCount: 4)) { AxisValueLabel(format: .dateTime.month(.abbreviated).day()) }
                 }
                 .frame(height: 110)
+            }
+        }
+    }
+}
+
+// MARK: 6 · Patterns
+
+private struct PatternsCard: View {
+    let stats: StatsSnapshot
+
+    var body: some View {
+        InsightCard(title: "Patterns", symbol: "sparkle.magnifyingglass", tint: .purple,
+                    insight: StatsInsights.patterns(stats)) {
+            if stats.daysOfData >= 30 {
+                ForEach(stats.patterns) { pattern in
+                    Label {
+                        Text(pattern.text).font(.subheadline)
+                    } icon: {
+                        Image(systemName: pattern.symbol).foregroundStyle(.purple)
+                    }
+                }
+                Text("Patterns, not causes: things that happen together don't necessarily cause each other.")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
+                ProgressRing(progress: Double(stats.daysOfData) / 30, color: .purple, lineWidth: 5) {
+                    Text("\(stats.daysOfData)").font(.caption.weight(.semibold)).numberStyle()
+                }
+                .frame(width: 48, height: 48)
             }
         }
     }

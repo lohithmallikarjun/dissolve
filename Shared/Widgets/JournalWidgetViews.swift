@@ -51,6 +51,7 @@ struct JournalMemoryView: View {
                 if let id = memory.photoID, let image = ImageStore.thumbnail(id: id) {
                     Image(platformImage: image)
                         .resizable()
+                        .widgetAccentedRenderingMode(.desaturated)
                         .scaledToFill()
                         .frame(width: 120)
                         .frame(maxHeight: .infinity)
