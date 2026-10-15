@@ -19,4 +19,6 @@ enum SharedKeys {
     static let deviceID = "device.id"
     static let diagnosticCounter = "m0.counter"
     static let diagnosticUpdatedAt = "m0.updatedAt"
+    /// Set when a widget or Shortcut changes the store from another process.
+    static let externalChangeAt = "store.externalChangeAt"
 }

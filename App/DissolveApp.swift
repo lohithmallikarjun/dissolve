@@ -3,18 +3,19 @@ import SwiftUI
 
 @main
 struct DissolveApp: App {
-    private let container: ModelContainer
+    @State private var container: ModelContainer
     private let storeStatus: StoreStatus
+    @State private var loadedAt = Date.now.timeIntervalSince1970
     @State private var syncFolder = SyncFolderStore()
     @State private var model = AppModel()
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
         let made = SharedModelContainer.make()
-        container = made.0
+        _container = State(initialValue: made.0)
         storeStatus = made.1
         #if DEBUG
-        DemoData.seedIfRequested(in: container.mainContext)
+        DemoData.seedIfRequested(in: made.0.mainContext)
         #endif
     }
 
@@ -31,7 +32,9 @@ struct DissolveApp: App {
         }
         .modelContainer(container)
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { model.refreshToday() }
+            guard phase == .active else { return }
+            model.refreshToday()
+            reloadIfChangedElsewhere()
         }
         .commands {
             DissolveCommands(model: model)
@@ -45,6 +48,16 @@ struct DissolveApp: App {
                 .frame(width: 460, height: 520)
         }
         #endif
+    }
+}
+
+extension DissolveApp {
+    /// Widgets log habits from their own process; reopen the store so the app shows those changes.
+    private func reloadIfChangedElsewhere() {
+        let changedAt = AppGroup.defaults.double(forKey: SharedKeys.externalChangeAt)
+        guard changedAt > loadedAt else { return }
+        loadedAt = Date.now.timeIntervalSince1970
+        container = SharedModelContainer.make().0
     }
 }
 

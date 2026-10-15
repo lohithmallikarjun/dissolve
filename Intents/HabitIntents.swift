@@ -82,5 +82,6 @@ enum HabitIntentStore {
         descriptor.fetchLimit = 1
         guard let habit = try context.fetch(descriptor).first else { return }
         HabitActions.primaryAction(habit, on: AppSettings.today(), in: context)
+        AppGroup.defaults.set(Date.now.timeIntervalSince1970, forKey: SharedKeys.externalChangeAt)
     }
 }
