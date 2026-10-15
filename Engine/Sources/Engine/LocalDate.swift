@@ -38,8 +38,8 @@ public struct LocalDate: Hashable, Comparable, Sendable, CustomStringConvertible
 
     /// The day a moment belongs to, given the "day ends at" setting.
     ///
-    /// With `dayEndsAtHour = 4`, 02:30 on the 15th still counts for the 14th.
-    public init(_ date: Date, calendar: Calendar = .current, dayEndsAtHour: Int = 4) {
+    /// With `dayEndsAtHour = 3` (the default), 02:30 on the 15th still counts for the 14th.
+    public init(_ date: Date, calendar: Calendar = .current, dayEndsAtHour: Int = 3) {
         let shifted = calendar.date(byAdding: .hour, value: -dayEndsAtHour, to: date) ?? date
         let c = calendar.dateComponents([.year, .month, .day], from: shifted)
         year = c.year!
