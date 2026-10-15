@@ -31,29 +31,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Select Xcode
-        # Prefer Xcode 27 (the real iOS/macOS 27 target). Until GitHub's images ship it,
-        # fall back to the newest Xcode 26 and build this CI copy with a 26.0 deployment target.
-        run: |
-          ls -d /Applications/Xcode*.app
-          XC=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | sort -V | tail -1)
-          if [ -n "$XC" ]; then
-            echo "DEPLOY_OVERRIDE=" >> "$GITHUB_ENV"
-          else
-            # Use the Xcode that matches the newest installed iOS simulator runtime.
-            IOS=$(xcrun simctl list runtimes -j | python3 -c '
-          import json, sys
-          rs = [r["version"] for r in json.load(sys.stdin)["runtimes"]
-                if r["platform"] == "iOS" and r["isAvailable"] and r["version"].startswith("26.")]
-          v = sorted(rs, key=lambda v: [int(x) for x in v.split(".")])[-1]
-          print(".".join(v.split(".")[:2]))')
-            echo "Newest iOS simulator runtime: $IOS"
-            XC=$(ls -d /Applications/Xcode_${IOS}*.app 2>/dev/null | sort -V | tail -1)
-            [ -n "$XC" ] || XC=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
-            echo "::warning::No Xcode 27 on the runner; CI builds with $(basename "$XC") and a 26.0 deployment target."
-            echo "DEPLOY_OVERRIDE=IPHONEOS_DEPLOYMENT_TARGET=26.0 MACOSX_DEPLOYMENT_TARGET=26.0" >> "$GITHUB_ENV"
-          fi
-          sudo xcode-select -s "$XC"
-          xcodebuild -version
+        run: scripts/ci-select-xcode.sh
 
       - name: Engine tests
         run: swift test --package-path Engine
