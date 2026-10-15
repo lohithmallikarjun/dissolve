@@ -22,6 +22,8 @@ enum SyncApplier {
                 case SyncEntity.photo:
                     try applyPhoto(record, context)
                     if !record.deleted { photosToFetch.append(record.id) }
+                case SyncEntity.countdown: try applyCountdown(record, context)
+                case SyncEntity.lifeProfile: try applyLifeProfile(record, context)
                 default: continue  // a newer app version's entity; ignore
                 }
             } catch {
@@ -231,6 +233,61 @@ enum SyncApplier {
     }
 }
 
+extension SyncApplier {
+    fileprivate static func applyCountdown(_ r: ChangeRecord, _ context: ModelContext) throws {
+        let id = r.id
+        var d = FetchDescriptor<Countdown>(predicate: #Predicate { $0.id == id })
+        d.fetchLimit = 1
+        let existing = try? context.fetch(d).first
+        if r.deleted {
+            if let existing { context.delete(existing) }
+            return
+        }
+        guard let f = try r.fields?.decode(CountdownFields.self) else { return }
+        let c = existing ?? {
+            let new = Countdown(title: f.title, symbol: f.symbol, colorName: f.colorName,
+                                targetDate: f.targetDate, isAllDay: f.isAllDay)
+            new.id = r.id
+            context.insert(new)
+            return new
+        }()
+        c.title = f.title
+        c.symbol = f.symbol
+        c.colorName = f.colorName
+        c.targetDate = f.targetDate
+        c.isAllDay = f.isAllDay
+        c.createdAt = f.createdAt
+        c.repeatsYearly = f.repeatsYearly
+        c.countUp = f.countUp
+        c.photoID = f.photoID
+        c.sortOrder = f.sortOrder
+        c.archivedAt = f.archivedAt
+        c.updatedAt = r.updatedAt
+    }
+
+    fileprivate static func applyLifeProfile(_ r: ChangeRecord, _ context: ModelContext) throws {
+        let id = r.id
+        var d = FetchDescriptor<LifeProfile>(predicate: #Predicate { $0.id == id })
+        d.fetchLimit = 1
+        let existing = try? context.fetch(d).first
+        if r.deleted {
+            if let existing { context.delete(existing) }
+            return
+        }
+        guard let f = try r.fields?.decode(LifeProfileFields.self), let birth = LocalDate(f.birthDate) else { return }
+        let p = existing ?? {
+            let new = LifeProfile(birthDate: birth, lifespanYears: f.lifespanYears)
+            new.id = r.id
+            context.insert(new)
+            return new
+        }()
+        p.birthDate = f.birthDate
+        p.lifespanYears = f.lifespanYears
+        p.eras = f.eras
+        p.updatedAt = r.updatedAt
+    }
+}
+
 /// Every record in the local store, for the first upload and the monthly snapshot.
 enum SyncExport {
     static func allRecords(in context: ModelContext, device: String) -> [ChangeRecord] {
@@ -239,5 +296,6 @@ enum SyncExport {
         }
         return records(Habit.self) + records(HabitSchedule.self) + records(HabitLog.self)
             + records(JournalTemplate.self) + records(Photo.self) + records(JournalEntry.self)
+            + records(Countdown.self) + records(LifeProfile.self)
     }
 }

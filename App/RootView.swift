@@ -47,11 +47,7 @@ private struct PhoneRootView: View {
                 NavigationStack { JournalView().toolbar { settingsButton } }
             }
             Tab(AppSection.life.title, systemImage: AppSection.life.symbol, value: .life) {
-                NavigationStack {
-                    ComingSoonView(title: "Life & Countdowns", symbol: "hourglass", milestone: 3)
-                        .navigationTitle("Life")
-                        .toolbar { settingsButton }
-                }
+                NavigationStack { LifeView().toolbar { settingsButton } }
             }
         }
         .sheet(isPresented: $showingSettings) {
@@ -146,7 +142,7 @@ private struct MacRootView: View {
             case .today: TodayView()
             case .progress: ProgressScreen()
             case .journal: JournalView()
-            case .life: ComingSoonView(title: "Life & Countdowns", symbol: "hourglass", milestone: 3)
+            case .life: LifeView()
             }
         }
     }

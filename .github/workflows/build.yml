@@ -94,6 +94,12 @@ jobs:
             launch -demoData -openJournal:-1
             sleep 6
             xcrun simctl io "$UDID" screenshot "shots/ios-entry-$mode.png"
+            launch -demoData -section:life
+            sleep 7
+            xcrun simctl io "$UDID" screenshot "shots/ios-life-$mode.png"
+            launch -demoData -openCountdown:0
+            sleep 7
+            xcrun simctl io "$UDID" screenshot "shots/ios-countdown-$mode.png"
           done
           DATA=$(xcrun simctl get_app_container "$UDID" "$BUNDLE_ID" data)
           cp "$DATA"/Documents/widget-gallery/*.png shots/widgets/ || echo "::warning::No widget gallery images"
@@ -116,6 +122,12 @@ jobs:
           kill "$PID" || true
           sleep 2
           "$APP/Contents/MacOS/Dissolve" -demoData -openJournal:-1 >> shots/mac-log.txt 2>&1 &
+          PID=$!
+          sleep 10
+          screencapture -x shots/mac-journal.png
+          kill "$PID" || true
+          sleep 2
+          "$APP/Contents/MacOS/Dissolve" -demoData -section:life >> shots/mac-log.txt 2>&1 &
           PID=$!
           sleep 10
           osascript -e 'tell application "System Events" to get {name, position, size} of every window of (first process whose unix id is '"$PID"')' > shots/mac-windows.txt 2>&1 || true

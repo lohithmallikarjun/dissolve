@@ -85,3 +85,42 @@ enum HabitIntentStore {
         AppGroup.defaults.set(Date.now.timeIntervalSince1970, forKey: SharedKeys.externalChangeAt)
     }
 }
+
+/// A countdown, for widget configuration.
+struct CountdownEntity: AppEntity {
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Countdown"
+    static let defaultQuery = CountdownEntityQuery()
+
+    let id: UUID
+    let title: String
+
+    var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\(title)") }
+}
+
+struct CountdownEntityQuery: EntityQuery {
+    func entities(for identifiers: [UUID]) async throws -> [CountdownEntity] {
+        try await CountdownIntentStore.entities().filter { identifiers.contains($0.id) }
+    }
+
+    func suggestedEntities() async throws -> [CountdownEntity] {
+        try await CountdownIntentStore.entities()
+    }
+}
+
+struct SelectCountdownIntent: WidgetConfigurationIntent {
+    static let title: LocalizedStringResource = "Choose Countdown"
+    static let description = IntentDescription("Leave empty to show the soonest one.")
+
+    @Parameter(title: "Countdown")
+    var countdown: CountdownEntity?
+}
+
+@MainActor
+enum CountdownIntentStore {
+    static func entities() throws -> [CountdownEntity] {
+        let context = ModelContext(try SharedModelContainer.appGroup())
+        let descriptor = FetchDescriptor<Countdown>(predicate: #Predicate { $0.archivedAt == nil },
+                                                    sortBy: [SortDescriptor(\.sortOrder)])
+        return try context.fetch(descriptor).map { CountdownEntity(id: $0.id, title: $0.title) }
+    }
+}

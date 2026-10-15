@@ -35,6 +35,8 @@ final class AppModel {
     var day: LocalDate
     /// Set to open that day's journal entry (deep links, ⌘N).
     var journalDate: LocalDate?
+    /// CI screenshots: opens the countdown at this index on the Life screen.
+    var countdownToOpen: Int?
     private(set) var today: LocalDate
 
     init() {
@@ -46,6 +48,13 @@ final class AppModel {
             .first(where: { $0.hasPrefix("-section:") })
             .flatMap({ AppSection(rawValue: String($0.dropFirst("-section:".count))) }) {
             section = tab
+        }
+        // CI screenshots: `-openCountdown:0` opens the first countdown.
+        if let index = ProcessInfo.processInfo.arguments
+            .first(where: { $0.hasPrefix("-openCountdown:") })
+            .flatMap({ Int($0.dropFirst("-openCountdown:".count)) }) {
+            section = .life
+            countdownToOpen = index
         }
         // CI screenshots: `-openJournal:-1` opens yesterday's entry.
         if let offset = ProcessInfo.processInfo.arguments
@@ -87,6 +96,8 @@ final class AppModel {
             showDay(today)
         case "progress":
             section = .progress
+        case "life":
+            section = .life
         default:
             break
         }

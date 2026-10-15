@@ -28,11 +28,13 @@ enum SyncEntity {
     static let journalTemplate = "journalTemplate"
     static let journalEntry = "journalEntry"
     static let photo = "photo"
+    static let countdown = "countdown"
+    static let lifeProfile = "lifeProfile"
 
     /// Parents before children, so a log never arrives before its habit.
     static func priority(_ entity: String) -> Int {
         switch entity {
-        case habit, journalTemplate, photo: 0
+        case habit, journalTemplate, photo, countdown, lifeProfile: 0
         default: 1
         }
     }
@@ -174,5 +176,42 @@ extension Photo: Syncable {
         try JSONValue(encoding: PhotoFields(
             fileName: fileName, thumbFileName: thumbFileName, width: width, height: height,
             caption: caption, createdAt: createdAt))
+    }
+}
+
+struct CountdownFields: Codable {
+    var title: String
+    var symbol: String
+    var colorName: String
+    var targetDate: Date
+    var isAllDay: Bool
+    var createdAt: Date
+    var repeatsYearly: Bool
+    var countUp: Bool
+    var photoID: String?
+    var sortOrder: Int
+    var archivedAt: Date?
+}
+
+struct LifeProfileFields: Codable {
+    var birthDate: String
+    var lifespanYears: Int
+    var eras: [LifeEra]
+}
+
+extension Countdown: Syncable {
+    static var syncEntity: String { SyncEntity.countdown }
+    func syncFields() throws -> JSONValue {
+        try JSONValue(encoding: CountdownFields(
+            title: title, symbol: symbol, colorName: colorName, targetDate: targetDate, isAllDay: isAllDay,
+            createdAt: createdAt, repeatsYearly: repeatsYearly, countUp: countUp, photoID: photoID,
+            sortOrder: sortOrder, archivedAt: archivedAt))
+    }
+}
+
+extension LifeProfile: Syncable {
+    static var syncEntity: String { SyncEntity.lifeProfile }
+    func syncFields() throws -> JSONValue {
+        try JSONValue(encoding: LifeProfileFields(birthDate: birthDate, lifespanYears: lifespanYears, eras: eras))
     }
 }

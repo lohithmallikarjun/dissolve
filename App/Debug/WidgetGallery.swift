@@ -10,6 +10,7 @@ enum WidgetGallery {
         #if os(iOS)
         let snapshot = DashboardLoader.load(context: container.mainContext)
         let journal = JournalSnapshot.load(context: container.mainContext)
+        let time = TimeSnapshot.load(context: container.mainContext)
         let first = snapshot.habits.first
         let water = snapshot.habits.first { $0.kind == .quantity } ?? first
 
@@ -30,6 +31,16 @@ enum WidgetGallery {
             ("journal-memory-medium", CGSize(width: 364, height: 170), AnyView(JournalMemoryView(snapshot: journal))),
             ("lock-rectangular-journal", CGSize(width: 172, height: 76),
              AnyView(JournalStreakRectangularView(snapshot: journal))),
+            ("countdown-small", CGSize(width: 170, height: 170), AnyView(CountdownSmallView(countdown: time.countdowns.first))),
+            ("countdown-small-final-hours", CGSize(width: 170, height: 170),
+             AnyView(CountdownSmallView(countdown: time.countdowns.first { $0.isFinalHours }))),
+            ("countdown-medium", CGSize(width: 364, height: 170), AnyView(CountdownListView(countdowns: time.countdowns))),
+            ("lock-circular-countdown", CGSize(width: 76, height: 76),
+             AnyView(CountdownCircularView(countdown: time.countdowns.first))),
+            ("lock-inline-countdown", CGSize(width: 240, height: 30), AnyView(CountdownInlineView(countdown: time.countdowns.first))),
+            ("life-small", CGSize(width: 170, height: 170), AnyView(LifeSmallView(life: time.life))),
+            ("life-large", CGSize(width: 364, height: 382), AnyView(LifeYearsView(life: time.life))),
+            ("lock-circular-life", CGSize(width: 76, height: 76), AnyView(LifeCircularView(life: time.life))),
         ]
 
         let folder = URL.documentsDirectory.appending(path: "widget-gallery")

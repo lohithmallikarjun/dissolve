@@ -17,7 +17,35 @@ enum DemoData {
         let today = AppSettings.today()
         seed(into: context, today: today)
         seedJournal(into: context, today: today, withPhotos: true)
+        seedTime(into: context, now: .now)
         try? context.save()
+    }
+
+    /// A few countdowns and a life profile with eras.
+    static func seedTime(into context: ModelContext, now: Date) {
+        let cal = Calendar.current
+        func days(_ n: Int) -> Date { cal.date(byAdding: .day, value: n, to: now)! }
+        let items: [(String, String, HabitColor, Date, Bool, Bool, Bool)] = [
+            ("Marathon", "figure.run", .orange, days(41), true, false, false),
+            ("Flight to Lisbon", "airplane", .blue, now.addingTimeInterval(20 * 3600), false, false, false),
+            ("Mum's birthday", "birthday.cake.fill", .pink, days(73), true, true, false),
+            ("No sugar", "leaf.fill", .green, days(-44), true, false, true),
+        ]
+        for (index, item) in items.enumerated() {
+            let c = Countdown(title: item.0, symbol: item.1, colorName: item.2.rawValue, targetDate: item.3, isAllDay: item.4)
+            c.repeatsYearly = item.5
+            c.countUp = item.6
+            c.sortOrder = index
+            c.createdAt = days(-60)
+            context.insert(c)
+        }
+        let profile = LifeProfile(birthDate: LocalDate("1995-06-12")!, lifespanYears: 80)
+        profile.eras = [
+            LifeEra(name: "School", start: LocalDate("2000-06-01")!, end: LocalDate("2013-05-31")!, colorName: "blue"),
+            LifeEra(name: "University", start: LocalDate("2013-08-01")!, end: LocalDate("2017-06-30")!, colorName: "purple"),
+            LifeEra(name: "Bengaluru", start: LocalDate("2017-07-15")!, end: nil, colorName: "green"),
+        ]
+        context.insert(profile)
     }
 
     static let journalLines = [
@@ -163,6 +191,7 @@ enum PreviewData {
         let container = SharedModelContainer.inMemory()
         DemoData.seed(into: container.mainContext, today: AppSettings.today(), days: 200)
         DemoData.seedJournal(into: container.mainContext, today: AppSettings.today(), withPhotos: false)
+        DemoData.seedTime(into: container.mainContext, now: .now)
         try? container.mainContext.save()
         return container
     }()

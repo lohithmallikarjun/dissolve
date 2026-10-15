@@ -4,12 +4,33 @@ import WidgetKit
 @main
 struct DissolveWidgetsBundle: WidgetBundle {
     var body: some Widget {
+        HabitWidgetsBundle().body
+        TimeWidgetsBundle().body
+        JournalWidgetsBundle().body
+        DiagnosticWidget()
+    }
+}
+
+struct HabitWidgetsBundle: WidgetBundle {
+    var body: some Widget {
         SingleHabitWidget()
         TodayHabitsWidget()
         ConsistencyWidget()
         YearGridWidget()
+    }
+}
+
+struct JournalWidgetsBundle: WidgetBundle {
+    var body: some Widget {
         JournalTodayWidget()
         OnThisDayWidget()
-        DiagnosticWidget()
+    }
+}
+
+struct TimeWidgetsBundle: WidgetBundle {
+    var body: some Widget {
+        CountdownWidget()
+        UpcomingCountdownsWidget()
+        LifeWidget()
     }
 }

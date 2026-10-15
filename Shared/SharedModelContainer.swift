@@ -15,6 +15,7 @@ enum SharedModelContainer {
     static var schema: Schema { Schema([
         Habit.self, HabitSchedule.self, HabitLog.self,
         JournalTemplate.self, TemplateBlock.self, JournalEntry.self, EntryBlock.self, Photo.self,
+        Countdown.self, LifeProfile.self,
         DiagnosticPing.self,
     ]) }
     private static let storeName = "Dissolve"
