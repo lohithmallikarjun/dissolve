@@ -211,8 +211,10 @@ private struct TemplateBlockRow: View {
                     if let id = block.imageID.flatMap(UUID.init(uuidString:)) {
                         PhotoThumbnail(id: id).frame(width: 44, height: 44).clipShape(.rect(cornerRadius: 8))
                     }
+                    let pickerTitle = block.imageID == nil ? String(localized: "Add a template image")
+                                                           : String(localized: "Change image")
                     PhotosPicker(selection: $photoItem, matching: .images) {
-                        Text(block.imageID == nil ? "Add a template image" : "Change image")
+                        Text(pickerTitle)
                     }
                     if block.imageID != nil {
                         Button("Remove", role: .destructive) { block.imageID = nil }

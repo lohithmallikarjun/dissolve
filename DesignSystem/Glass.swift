@@ -77,6 +77,7 @@ struct DayCompleteCelebration: View {
     @State private var visible = false
 
     var body: some View {
+        let still = reduceMotion
         ZStack {
             ForEach(0..<10, id: \.self) { i in
                 Image(systemName: i.isMultiple(of: 2) ? "sparkle" : "circle.fill")
@@ -89,8 +90,8 @@ struct DayCompleteCelebration: View {
                             .scaleEffect(value.scale)
                     } keyframes: { _ in
                         KeyframeTrack(\.distance) {
-                            SpringKeyframe(reduceMotion ? 0 : 120, duration: 0.6, spring: .snappy)
-                            LinearKeyframe(reduceMotion ? 0 : 140, duration: 0.5)
+                            SpringKeyframe(still ? 0 : 120, duration: 0.6, spring: .snappy)
+                            LinearKeyframe(still ? 0 : 140, duration: 0.5)
                         }
                         KeyframeTrack(\.opacity) {
                             LinearKeyframe(1, duration: 0.15)
@@ -107,7 +108,7 @@ struct DayCompleteCelebration: View {
                 .font(.system(size: 64))
                 .foregroundStyle(.green)
                 .keyframeAnimator(initialValue: Burst(), trigger: trigger) { view, value in
-                    view.scaleEffect(reduceMotion ? 1 : value.scale).opacity(value.opacity)
+                    view.scaleEffect(still ? 1 : value.scale).opacity(value.opacity)
                 } keyframes: { _ in
                     KeyframeTrack(\.scale) {
                         SpringKeyframe(1.25, duration: 0.35)
