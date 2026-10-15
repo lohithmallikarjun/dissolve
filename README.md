@@ -117,6 +117,24 @@ to move files between devices.
 | 8 | Lock Screen: countdown inline + circular, life gauge | |
 | 9 | Scroll the Life screen quickly | Stays smooth (the grid is one Canvas drawing) |
 
+## Milestone 4: try it (reminders, Siri, Control Center)
+
+| # | Do | Expect |
+|---|---|---|
+| 1 | Settings (gear) → **Allow Notifications** | "Notifications on" |
+| 2 | Edit a habit → **Remind me** → a time 2 minutes from now → Save | A notification arrives; long-press it → **Done** checks the habit off |
+| 3 | Check the habit off before its time on another day | No reminder that day |
+| 4 | Settings → **Evening journal nudge** → a time 2 minutes away | "How was today?" → tap opens today's entry |
+| 5 | iPhone: Control Center → edit (+) → **Add a Control** → search Dissolve → **Log Habit** → pick a habit | Tapping it logs the habit; the icon turns to ✓ |
+| 6 | Also add **New Journal Entry** | Opens today's entry |
+| 7 | Say "Hey Siri, log Meditate in Dissolve" | "Logged Meditate … N-day streak" |
+| 8 | "Hey Siri, how am I doing in Dissolve?" | "3 of 5 habits done today. Next up: …" |
+| 9 | Shortcuts app → Dissolve | Log Habit, Today's Habits, Habit Streak, Add to Journal, New Journal Entry, Days Until |
+| 10 | Action button (iPhone 15 Pro and later): Settings → Action Button → Controls → Log Habit | One press logs it |
+
+Notifications are local (scheduled on the device a week ahead), so they need no paid account and no server.
+They're refreshed every time you open Dissolve.
+
 ## Weekly reinstall (free account: apps expire after 7 days)
 
 `scripts/reinstall-iphone.sh` pulls, builds and reinstalls Dissolve on your iPhone over Wi-Fi.
