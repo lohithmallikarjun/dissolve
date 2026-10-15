@@ -1,6 +1,9 @@
 import Engine
 import Foundation
+import ImageIO
 import SwiftData
+import SwiftUI
+import UniformTypeIdentifiers
 
 /// Plausible sample habits with months of history, for previews, widget placeholders and CI screenshots.
 /// Deterministic, so screenshots are stable.
@@ -11,8 +14,74 @@ enum DemoData {
         guard ProcessInfo.processInfo.arguments.contains("-demoData") else { return }
         let count = (try? context.fetchCount(FetchDescriptor<Habit>())) ?? 0
         guard count == 0 else { return }
-        seed(into: context, today: AppSettings.today())
+        let today = AppSettings.today()
+        seed(into: context, today: today)
+        seedJournal(into: context, today: today, withPhotos: true)
         try? context.save()
+    }
+
+    static let journalLines = [
+        "Long walk by the lake before work — the light was unreal.",
+        "Finally finished the chapter I'd been stuck on for a week.",
+        "Cooked dinner for friends; the dal turned out perfect.",
+        "Slow morning, lots of tea, and a good conversation with Mum.",
+        "Ran 5 km without stopping for the first time.",
+        "Quiet day. Tidied the desk and read in the park.",
+        "Tough meeting, but I said what I needed to say.",
+        "Watched the sunset from the terrace with a coffee.",
+    ]
+
+    /// About two months of entries, plus one from a year ago (for "On this day").
+    /// Photos are generated gradients, only when asked (they need the image renderer).
+    @MainActor
+    static func seedJournal(into context: ModelContext, today: LocalDate, withPhotos: Bool) {
+        var rng = SplitMix64(seed: 7)
+        let template = JournalStore.defaultTemplate(in: context)
+        var days = (1...60).map { today.adding(days: -$0) }.filter { _ in rng.chance(0.8) }
+        days.append(today.adding(days: -365))
+        for (index, date) in days.enumerated() {
+            let entry = JournalEntry(date: date, templateID: template.id)
+            context.insert(entry)
+            entry.mood = Int(rng.next(in: 2.5...5.99))
+            for t in template.orderedBlocks {
+                let block = EntryBlock(kind: t.kind, order: t.order, promptText: t.promptText, placeholder: t.placeholder)
+                context.insert(block)
+                block.entry = entry
+                switch t.kind {
+                case .prompt: block.text = journalLines[index % journalLines.count]
+                case .text: block.text = index % 3 == 0 ? "Grateful for small things. Tomorrow: early night." : ""
+                case .image:
+                    if withPhotos, index % 4 == 0 || date == today.adding(days: -365),
+                       let saved = demoPhoto(seed: index) {
+                        context.insert(Photo(id: saved.id, width: saved.width, height: saved.height))
+                        block.photoIDs = [saved.id.uuidString]
+                    }
+                default: break
+                }
+            }
+            entry.recountWords()
+        }
+    }
+
+    @MainActor
+    private static func demoPhoto(seed: Int) -> ImageStore.Saved? {
+        let palettes: [[Color]] = [[.orange, .pink, .purple], [.teal, .blue, .indigo], [.yellow, .orange, .red],
+                                   [.mint, .green, .teal]]
+        let colors = palettes[seed % palettes.count]
+        let view = ZStack {
+            LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
+            Circle().fill(.white.opacity(0.35)).frame(width: 260).offset(x: 180, y: -120)
+            Rectangle().fill(.black.opacity(0.18)).frame(height: 220).offset(y: 230)
+        }
+        .frame(width: 1200, height: 900)
+        let renderer = ImageRenderer(content: view)
+        guard let image = renderer.cgImage else { return nil }
+        let data = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(data, UTType.jpeg.identifier as CFString, 1, nil)
+        else { return nil }
+        CGImageDestinationAddImage(destination, image, nil)
+        guard CGImageDestinationFinalize(destination) else { return nil }
+        return try? ImageStore.save(imageData: data as Data)
     }
 
     static func seed(into context: ModelContext, today: LocalDate, days: Int = 300) {
@@ -93,6 +162,7 @@ enum PreviewData {
     static let container: ModelContainer = {
         let container = SharedModelContainer.inMemory()
         DemoData.seed(into: container.mainContext, today: AppSettings.today(), days: 200)
+        DemoData.seedJournal(into: container.mainContext, today: AppSettings.today(), withPhotos: false)
         try? container.mainContext.save()
         return container
     }()

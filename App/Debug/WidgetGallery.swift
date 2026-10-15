@@ -9,6 +9,7 @@ enum WidgetGallery {
         guard ProcessInfo.processInfo.arguments.contains("-widgetGallery") else { return }
         #if os(iOS)
         let snapshot = DashboardLoader.load(context: container.mainContext)
+        let journal = JournalSnapshot.load(context: container.mainContext)
         let first = snapshot.habits.first
         let water = snapshot.habits.first { $0.kind == .quantity } ?? first
 
@@ -25,6 +26,10 @@ enum WidgetGallery {
             ("lock-rectangular-habit", CGSize(width: 172, height: 76), AnyView(HabitRectangularView(habit: snapshot.nextUndone))),
             ("lock-rectangular-dots", CGSize(width: 172, height: 76), AnyView(GridDotsRectangularView(snapshot: snapshot))),
             ("lock-circular", CGSize(width: 76, height: 76), AnyView(PercentCircularView(fraction: snapshot.todayFraction))),
+            ("journal-small", CGSize(width: 170, height: 170), AnyView(JournalSmallView(snapshot: journal))),
+            ("journal-memory-medium", CGSize(width: 364, height: 170), AnyView(JournalMemoryView(snapshot: journal))),
+            ("lock-rectangular-journal", CGSize(width: 172, height: 76),
+             AnyView(JournalStreakRectangularView(snapshot: journal))),
         ]
 
         let folder = URL.documentsDirectory.appending(path: "widget-gallery")

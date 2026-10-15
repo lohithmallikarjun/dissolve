@@ -18,8 +18,8 @@ public enum Overall {
         return count == 0 ? nil : total / Double(count)
     }
 
-    public static func cell(on date: LocalDate, engines: [HabitEngine]) -> GridCell {
-        GridCell(level: GridCell.level(for: fraction(on: date, engines: engines) ?? 0))
+    public static func cell(on date: LocalDate, engines: [HabitEngine], journaled: Bool? = nil) -> GridCell {
+        GridCell(level: GridCell.level(for: fraction(on: date, engines: engines, journaled: journaled) ?? 0))
     }
 
     /// Consecutive days at 100 %. Days with nothing due are neutral, and so is today until it's done.

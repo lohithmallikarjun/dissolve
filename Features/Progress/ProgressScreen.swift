@@ -23,6 +23,8 @@ struct ProgressScreen: View {
     @State private var mode: Mode = .grid
     @State private var range: Range = .year
     @State private var selection: LocalDate?
+    @AppStorage("grid.countJournal") private var countJournal = false
+    @Query private var journalEntries: [JournalEntry]
 
     var body: some View {
         let today = model.today
@@ -90,7 +92,8 @@ struct ProgressScreen: View {
                 .fixedSize()
             }
             ContributionGrid(
-                snapshot: .overall(engines: engines, today: today, weeks: range.rawValue),
+                snapshot: .overall(engines: engines, today: today, weeks: range.rawValue,
+                                   journalDates: countJournal ? Set(journalEntries.compactMap(\.localDate)) : nil),
                 color: .green,
                 selection: $selection,
                 label: { overallLabel(for: $0, engines: engines) },
@@ -100,6 +103,10 @@ struct ProgressScreen: View {
                     .frame(width: 260)
             }
             .id(range)
+            Toggle("Count journaling", isOn: $countJournal.animation(.smooth))
+                .font(.subheadline)
+                .toggleStyle(.switch)
+                .controlSize(.small)
         }
         .card()
     }

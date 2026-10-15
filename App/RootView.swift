@@ -5,13 +5,26 @@ import SwiftUI
 struct RootView: View {
     let storeStatus: StoreStatus
     @Environment(AppModel.self) private var model
+    @Environment(SyncFolderStore.self) private var syncFolder
+    @AppStorage("sync.setupDismissed") private var setupDismissed = false
+    @State private var showingSyncSetup = false
 
     var body: some View {
-        #if os(macOS)
-        MacRootView(storeStatus: storeStatus)
-        #else
-        PhoneRootView(storeStatus: storeStatus)
-        #endif
+        Group {
+            #if os(macOS)
+            MacRootView(storeStatus: storeStatus)
+            #else
+            PhoneRootView(storeStatus: storeStatus)
+            #endif
+        }
+        .sheet(isPresented: $showingSyncSetup) {
+            SyncSetupView { setupDismissed = true }
+        }
+        .task {
+            // First launch: ask for the shared iCloud Drive folder (skipped for CI screenshots).
+            let isCI = ProcessInfo.processInfo.arguments.contains("-demoData")
+            if syncFolder.folderURL == nil, !setupDismissed, !isCI { showingSyncSetup = true }
+        }
     }
 }
 
@@ -31,11 +44,7 @@ private struct PhoneRootView: View {
                 NavigationStack { ProgressScreen().toolbar { settingsButton } }
             }
             Tab(AppSection.journal.title, systemImage: AppSection.journal.symbol, value: .journal) {
-                NavigationStack {
-                    ComingSoonView(title: "Journal", symbol: "book", milestone: 2)
-                        .navigationTitle("Journal")
-                        .toolbar { settingsButton }
-                }
+                NavigationStack { JournalView().toolbar { settingsButton } }
             }
             Tab(AppSection.life.title, systemImage: AppSection.life.symbol, value: .life) {
                 NavigationStack {
@@ -117,7 +126,7 @@ private struct MacRootView: View {
                     Label("Daily Journal", systemImage: "doc.text")
                         .foregroundStyle(.secondary)
                         .tag(SidebarItem.template)
-                        .help("Templates arrive in Milestone 2")
+                        .help("More templates arrive in Milestone 7")
                 }
             }
             .navigationSplitViewColumnWidth(min: 200, ideal: 220)
@@ -136,7 +145,7 @@ private struct MacRootView: View {
             switch model.section {
             case .today: TodayView()
             case .progress: ProgressScreen()
-            case .journal: ComingSoonView(title: "Journal", symbol: "book", milestone: 2)
+            case .journal: JournalView()
             case .life: ComingSoonView(title: "Life & Countdowns", symbol: "hourglass", milestone: 3)
             }
         }
@@ -145,8 +154,11 @@ private struct MacRootView: View {
 #endif
 
 #Preview {
+    let folder = SyncFolderStore(defaults: UserDefaults(suiteName: "preview")!)
     RootView(storeStatus: .preview)
         .environment(AppModel())
-        .environment(SyncFolderStore(defaults: UserDefaults(suiteName: "preview")!))
+        .environment(JournalLock())
+        .environment(SyncService(folderStore: folder))
+        .environment(folder)
         .modelContainer(PreviewData.container)
 }

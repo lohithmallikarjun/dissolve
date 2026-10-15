@@ -15,9 +15,11 @@ struct GridSnapshot: Sendable {
         }
     }
 
-    static func overall(engines: [HabitEngine], today: LocalDate, weeks: Int) -> GridSnapshot {
-        GridSnapshot(layout: WeekGrid(endingAt: today, weeks: weeks, firstWeekday: AppSettings.firstWeekday)) {
-            Overall.cell(on: $0, engines: engines)
+    /// `journalDates`: when given, writing a journal entry counts as one more thing done that day.
+    static func overall(engines: [HabitEngine], today: LocalDate, weeks: Int,
+                        journalDates: Set<LocalDate>? = nil) -> GridSnapshot {
+        GridSnapshot(layout: WeekGrid(endingAt: today, weeks: weeks, firstWeekday: AppSettings.firstWeekday)) { date in
+            Overall.cell(on: date, engines: engines, journaled: journalDates.map { $0.contains(date) })
         }
     }
 

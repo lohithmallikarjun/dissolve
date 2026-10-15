@@ -33,6 +33,8 @@ final class AppModel {
     var selectedHabitID: UUID?
     /// The day shown on Today (editable: any past day).
     var day: LocalDate
+    /// Set to open that day's journal entry (deep links, ⌘N).
+    var journalDate: LocalDate?
     private(set) var today: LocalDate
 
     init() {
@@ -44,6 +46,13 @@ final class AppModel {
             .first(where: { $0.hasPrefix("-section:") })
             .flatMap({ AppSection(rawValue: String($0.dropFirst("-section:".count))) }) {
             section = tab
+        }
+        // CI screenshots: `-openJournal:-1` opens yesterday's entry.
+        if let offset = ProcessInfo.processInfo.arguments
+            .first(where: { $0.hasPrefix("-openJournal:") })
+            .flatMap({ Int($0.dropFirst("-openJournal:".count)) }) {
+            section = .journal
+            journalDate = today.adding(days: offset)
         }
     }
 
@@ -59,6 +68,28 @@ final class AppModel {
         day = min(date, today)
         section = .today
         selectedHabitID = nil
+    }
+
+    func openJournal(_ date: LocalDate? = nil) {
+        section = .journal
+        selectedHabitID = nil
+        journalDate = min(date ?? today, today)
+    }
+
+    /// `dissolve://journal/today` or `dissolve://journal/2026-10-15` (widgets).
+    func handle(_ url: URL) {
+        guard url.scheme == "dissolve" else { return }
+        switch url.host() {
+        case "journal":
+            let last = url.lastPathComponent
+            openJournal(last == "today" || last == "/" ? today : LocalDate(last))
+        case "today":
+            showDay(today)
+        case "progress":
+            section = .progress
+        default:
+            break
+        }
     }
 
     func moveDay(by days: Int) {

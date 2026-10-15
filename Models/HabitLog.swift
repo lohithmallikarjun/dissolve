@@ -20,6 +20,8 @@ final class HabitLog {
     /// Insert it, then set `habit` (see `HabitActions.log(for:on:in:)`).
     init(habit: Habit, date: LocalDate) {
         key = Self.key(habitID: habit.id, date: date)
+        // Derived from habit + day, so two devices logging the same day edit the same record.
+        id = DeterministicID.uuid(for: "habitLog|\(key)")
         self.date = date.description
     }
 

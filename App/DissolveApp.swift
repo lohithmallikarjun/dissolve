@@ -1,13 +1,20 @@
 import SwiftData
 import SwiftUI
+#if os(iOS)
+import BackgroundTasks
+#endif
 
 @main
 struct DissolveApp: App {
+    static let refreshTaskID = "com.lohith.dissolve.sync"
+
     @State private var container: ModelContainer
     private let storeStatus: StoreStatus
     @State private var loadedAt = Date.now.timeIntervalSince1970
-    @State private var syncFolder = SyncFolderStore()
+    @State private var syncFolder: SyncFolderStore
+    @State private var sync: SyncService
     @State private var model = AppModel()
+    @State private var journalLock = JournalLock()
     @Environment(\.scenePhase) private var scenePhase
     #if os(macOS) && DEBUG
     @NSApplicationDelegateAdaptor(LaunchDiagnostics.self) private var launchDiagnostics
@@ -15,8 +22,13 @@ struct DissolveApp: App {
 
     init() {
         let made = SharedModelContainer.make()
+        // Every save goes through Persistence.save, which records changes for sync.
+        made.0.mainContext.autosaveEnabled = false
         _container = State(initialValue: made.0)
         storeStatus = made.1
+        let folder = SyncFolderStore()
+        _syncFolder = State(initialValue: folder)
+        _sync = State(initialValue: SyncService(folderStore: folder))
         #if DEBUG
         DemoData.seedIfRequested(in: made.0.mainContext)
         #endif
@@ -26,10 +38,22 @@ struct DissolveApp: App {
         WindowGroup {
             RootView(storeStatus: storeStatus)
                 .environment(syncFolder)
+                .environment(sync)
                 .environment(model)
+                .environment(journalLock)
                 .tint(.green)
-                .onAppear { print("Dissolve: root view appeared") }
+                .onOpenURL { model.handle($0) }
                 .task { await model.runDayClock() }
+                .task { await sync.sync(container: container) }
+                #if os(macOS)
+                .task { await periodicSync() }
+                #endif
+                .onReceive(NotificationCenter.default.publisher(for: .dissolveLocalChange)) { _ in
+                    sync.syncSoon(container: container)
+                }
+                .onChange(of: syncFolder.folderURL) { _, url in
+                    if url != nil { Task { await sync.sync(container: container) } }
+                }
                 #if DEBUG
                 .task { await WidgetGallery.renderIfRequested(container: container) }
                 #endif
@@ -39,10 +63,26 @@ struct DissolveApp: App {
         .defaultSize(width: 1100, height: 760)
         #endif
         .onChange(of: scenePhase) { _, phase in
-            guard phase == .active else { return }
-            model.refreshToday()
-            reloadIfChangedElsewhere()
+            switch phase {
+            case .active:
+                model.refreshToday()
+                reloadIfChangedElsewhere()
+                Task { await sync.sync(container: container) }
+            case .background:
+                journalLock.lock()
+                #if os(iOS)
+                scheduleBackgroundSync()
+                #endif
+            default:
+                break
+            }
         }
+        #if os(iOS)
+        .backgroundTask(.appRefresh(Self.refreshTaskID)) {
+            await scheduleBackgroundSync()
+            await sync.sync(container: container)
+        }
+        #endif
         .commands {
             DissolveCommands(model: model)
         }
@@ -51,8 +91,10 @@ struct DissolveApp: App {
         Settings {
             NavigationStack { SettingsView(storeStatus: storeStatus) }
                 .environment(syncFolder)
+                .environment(sync)
+                .environment(journalLock)
                 .modelContainer(container)
-                .frame(width: 460, height: 520)
+                .frame(width: 480, height: 600)
         }
         #endif
     }
@@ -64,15 +106,39 @@ extension DissolveApp {
         let changedAt = AppGroup.defaults.double(forKey: SharedKeys.externalChangeAt)
         guard changedAt > loadedAt else { return }
         loadedAt = Date.now.timeIntervalSince1970
-        container = SharedModelContainer.make().0
+        let fresh = SharedModelContainer.make().0
+        fresh.mainContext.autosaveEnabled = false
+        container = fresh
     }
+
+    #if os(iOS)
+    /// Asks iOS to wake the app roughly hourly to merge other devices' changes.
+    private func scheduleBackgroundSync() {
+        let request = BGAppRefreshTaskRequest(identifier: Self.refreshTaskID)
+        request.earliestBeginDate = .now.addingTimeInterval(60 * 60)
+        try? BGTaskScheduler.shared.submit(request)
+    }
+    #endif
+
+    #if os(macOS)
+    private func periodicSync() async {
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(10 * 60))
+            await sync.sync(container: container)
+        }
+    }
+    #endif
 }
 
-/// ⌘1–4 switch sections, ⌘← / ⌘→ change day.
+/// ⌘N new journal entry, ⌘1–4 switch sections, ⌘← / ⌘→ change day.
 struct DissolveCommands: Commands {
     let model: AppModel
 
     var body: some Commands {
+        CommandGroup(replacing: .newItem) {
+            Button("New Journal Entry") { model.openJournal() }
+                .keyboardShortcut("n", modifiers: .command)
+        }
         CommandMenu("Go") {
             ForEach(Array(AppSection.allCases.enumerated()), id: \.element) { index, section in
                 Button(section.title) {

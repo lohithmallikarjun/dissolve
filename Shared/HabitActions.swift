@@ -70,12 +70,7 @@ enum HabitActions {
     }
 
     static func save(_ context: ModelContext) {
-        do {
-            try context.save()
-        } catch {
-            print("Dissolve: save failed: \(error)")
-        }
-        WidgetCenter.shared.reloadAllTimelines()
+        Persistence.save(context)
     }
 
     /// A log with nothing in it is deleted, so "untouched" days stay untouched.

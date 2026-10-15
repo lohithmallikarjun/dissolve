@@ -8,6 +8,8 @@ struct DissolveWidgetsBundle: WidgetBundle {
         TodayHabitsWidget()
         ConsistencyWidget()
         YearGridWidget()
+        JournalTodayWidget()
+        OnThisDayWidget()
         DiagnosticWidget()
     }
 }
