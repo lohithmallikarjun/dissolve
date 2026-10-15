@@ -11,6 +11,8 @@ struct JournalView: View {
     @Query(sort: \JournalEntry.date, order: .reverse) private var entries: [JournalEntry]
 
     @State private var opened: JournalEntry?
+    @State private var showingTemplates = false
+    @Query(sort: \JournalTemplate.createdAt) private var templates: [JournalTemplate]
     #if os(macOS)
     @State private var selectedID: UUID?
     @State private var showsInspector = true
@@ -35,6 +37,27 @@ struct JournalView: View {
                 Button("New Entry", systemImage: "square.and.pencil") { open(model.today) }
                     .disabled(lock.isLocked)
             }
+            ToolbarItem(placement: .secondaryAction) {
+                Menu("More", systemImage: "ellipsis.circle") {
+                    if templates.count > 1, JournalStore.entry(on: model.today, in: context) == nil {
+                        Section("Today's entry from") {
+                            ForEach(templates) { template in
+                                Button(template.name) { open(model.today, template: template) }
+                            }
+                        }
+                    }
+                    Button("Templates…", systemImage: "doc.text") { showingTemplates = true }
+                }
+                .disabled(lock.isLocked)
+            }
+        }
+        .sheet(isPresented: $showingTemplates) {
+            NavigationStack {
+                TemplatesView()
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) { Button("Done") { showingTemplates = false } }
+                    }
+            }
         }
         .onChange(of: model.journalDate, initial: true) { _, date in
             guard let date, !lock.isLocked else { return }
@@ -49,8 +72,8 @@ struct JournalView: View {
         }
     }
 
-    private func open(_ date: LocalDate) {
-        let entry = JournalStore.entryCreatingIfNeeded(on: date, in: context)
+    private func open(_ date: LocalDate, template: JournalTemplate? = nil) {
+        let entry = JournalStore.entryCreatingIfNeeded(on: date, template: template, in: context)
         #if os(macOS)
         selectedID = entry.id
         #else
@@ -58,11 +81,23 @@ struct JournalView: View {
         #endif
     }
 
+    /// An entry from this date in an earlier year.
+    private var onThisDay: JournalEntry? {
+        let dates = entries.compactMap(\.localDate)
+        guard let date = JournalStats.onThisDay(dates, today: model.today).first else { return nil }
+        return entries.first { $0.localDate == date }
+    }
+
     @ViewBuilder
     private var content: some View {
         #if os(macOS)
         HStack(spacing: 0) {
             List(selection: $selectedID) {
+                if let memory = onThisDay {
+                    Section("On this day") {
+                        EntryRow(entry: memory).tag(memory.id)
+                    }
+                }
                 ForEach(entries) { entry in
                     EntryRow(entry: entry).tag(entry.id)
                 }
@@ -96,6 +131,10 @@ struct JournalView: View {
                     }
                     .padding(.top, 40)
                 }
+                if let memory = onThisDay {
+                    Button { opened = memory } label: { OnThisDayCard(entry: memory, today: model.today) }
+                        .buttonStyle(.plain)
+                }
                 ForEach(entries) { entry in
                     Button { opened = entry } label: { EntryCard(entry: entry) }
                         .buttonStyle(.plain)
@@ -124,6 +163,40 @@ struct JournalLockedView: View {
                 .buttonStyle(.borderedProminent)
         }
         .task { await lock.unlock() }
+    }
+}
+
+/// "On this day" — the same date in an earlier year.
+struct OnThisDayCard: View {
+    let entry: JournalEntry
+    let today: LocalDate
+
+    var body: some View {
+        HStack(spacing: 14) {
+            if let id = entry.photoIDs.first.flatMap(UUID.init(uuidString:)) {
+                PhotoThumbnail(id: id)
+                    .frame(width: 72, height: 72)
+                    .clipShape(.rect(cornerRadius: 14))
+                    .privacySensitive()
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                let years = (entry.localDate?.year).map { today.year - $0 } ?? 1
+                Label(years == 1 ? "On this day · a year ago" : "On this day · \(years) years ago",
+                      systemImage: "clock.arrow.circlepath")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.indigo)
+                Text(entry.firstLine.isEmpty ? String(localized: "An entry without text") : entry.firstLine)
+                    .font(.subheadline)
+                    .lineLimit(3)
+                    .privacySensitive()
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card(padding: 16)
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.indigo.opacity(0.35), lineWidth: 1)
+        }
     }
 }
 

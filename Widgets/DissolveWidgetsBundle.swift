@@ -11,6 +11,7 @@ struct DissolveWidgetsBundle: WidgetBundle {
         DiagnosticWidget()
         #if os(iOS)
         ControlsBundle().body
+        CountdownLiveActivity()
         #endif
     }
 }

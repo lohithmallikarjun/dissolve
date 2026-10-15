@@ -12,6 +12,8 @@ struct LifeView: View {
     @State private var editingProfile = false
     @State private var addingCountdown = false
     @State private var opened: Countdown?
+    @AppStorage("life.tintByConsistency") private var tintByConsistency = false
+    @Query(filter: #Predicate<Habit> { $0.archivedAt == nil }) private var habits: [Habit]
     @Namespace private var zoom
 
     var body: some View {
@@ -31,8 +33,19 @@ struct LifeView: View {
                             Spacer()
                             Text("Age \(grid.age)").font(.subheadline).foregroundStyle(.secondary).numberStyle()
                         }
-                        LifeWeeksGrid(grid: grid, eras: profile.eras)
-                        if !profile.eras.isEmpty { EraLegend(eras: profile.eras) }
+                        LifeWeeksGrid(grid: grid, eras: profile.eras,
+                                      levels: tintByConsistency ? consistencyLevels(grid) : nil)
+                        if tintByConsistency {
+                            HStack { Spacer(); GridLegend(color: .green) }
+                        } else if !profile.eras.isEmpty {
+                            EraLegend(eras: profile.eras)
+                        }
+                        if !habits.isEmpty {
+                            Toggle("Tint past weeks by consistency", isOn: $tintByConsistency.animation(.smooth))
+                                .font(.subheadline)
+                                .toggleStyle(.switch)
+                                .controlSize(.small)
+                        }
                     }
                     .card()
                 }
@@ -63,6 +76,13 @@ struct LifeView: View {
         .sheet(item: $opened) { CountdownDetailView(countdown: $0).frame(minWidth: 560, minHeight: 520) }
         #endif
         .task(id: model.today) { archiveFinishedCountdowns() }
+        #if os(iOS)
+        .task(id: countdowns.map(\.updatedAt)) {
+            CountdownActivities.refresh(countdowns.map { c in
+                (c.id, c.title, c.symbol, c.colorName, c.state().occurrence, !c.isAllDay && !c.countUp)
+            })
+        }
+        #endif
         .onAppear {
             if let index = model.countdownToOpen, countdowns.indices.contains(index) {
                 opened = countdowns[index]
@@ -105,6 +125,24 @@ struct LifeView: View {
             .scrollTargetBehavior(.viewAligned)
             .scrollClipDisabled()
         }
+    }
+
+    /// Each past week since your first habit, shaded by its completion rate.
+    private func consistencyLevels(_ grid: LifeGrid) -> [LifeGrid.Cell: Int] {
+        let engines = habits.map { $0.engine(today: model.today) }
+        guard let first = engines.map(\.habit.startDate).min(), var cell = grid.cell(for: first) else { return [:] }
+        var result: [LifeGrid.Cell: Int] = [:]
+        while grid.state(cell) == .past {
+            let start = grid.startDate(cell)
+            if let rate = Stats.tally(engines, from: start, to: start.adding(days: 6)).rate {
+                result[cell] = GridCell.level(for: rate)
+            }
+            cell = cell.column + 1 < LifeGrid.weeksPerYear
+                ? LifeGrid.Cell(row: cell.row, column: cell.column + 1)
+                : LifeGrid.Cell(row: cell.row + 1, column: 0)
+            if cell.row >= grid.years { break }
+        }
+        return result
     }
 
     /// A one-off countdown is celebrated on its day, then archived the day after.

@@ -101,6 +101,7 @@ struct JournalTemplateFields: Codable {
     var isDefault: Bool
     var createdAt: Date
     var blocks: [BlockFields]
+    var weekdays: [Int]?
 }
 
 struct PhotoFields: Codable {
@@ -151,7 +152,7 @@ extension EntryBlock {
 extension TemplateBlock {
     var fields: BlockFields {
         BlockFields(id: id, kind: kindRaw, order: order, promptText: promptText, placeholder: placeholder,
-                    text: "", checklist: [], rating: 0, photoIDs: [], imageID: imageID, required: required)
+                    text: "", checklist: checklistItems, rating: 0, photoIDs: [], imageID: imageID, required: required)
     }
 }
 
@@ -168,7 +169,8 @@ extension JournalTemplate: Syncable {
     static var syncEntity: String { SyncEntity.journalTemplate }
     func syncFields() throws -> JSONValue {
         try JSONValue(encoding: JournalTemplateFields(
-            name: name, isDefault: isDefault, createdAt: createdAt, blocks: orderedBlocks.map(\.fields)))
+            name: name, isDefault: isDefault, createdAt: createdAt, blocks: orderedBlocks.map(\.fields),
+            weekdays: weekdays))
     }
 }
 

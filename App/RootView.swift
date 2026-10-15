@@ -84,15 +84,23 @@ private struct MacRootView: View {
 
     private var selection: Binding<SidebarItem?> {
         Binding(
-            get: { model.selectedHabitID.map(SidebarItem.habit) ?? .section(model.section) },
+            get: {
+                if model.showsTemplates { return .template }
+                return model.selectedHabitID.map(SidebarItem.habit) ?? .section(model.section)
+            },
             set: { item in
                 switch item {
                 case .section(let section):
                     model.section = section
                     model.selectedHabitID = nil
+                    model.showsTemplates = false
                 case .habit(let id):
                     model.selectedHabitID = id
-                case .template, nil:
+                    model.showsTemplates = false
+                case .template:
+                    model.showsTemplates = true
+                    model.selectedHabitID = nil
+                case nil:
                     break
                 }
             })
@@ -118,11 +126,8 @@ private struct MacRootView: View {
                         .tag(SidebarItem.habit(habit.id))
                     }
                 }
-                Section("Templates") {
-                    Label("Daily Journal", systemImage: "doc.text")
-                        .foregroundStyle(.secondary)
-                        .tag(SidebarItem.template)
-                        .help("More templates arrive in Milestone 7")
+                Section("Journal") {
+                    Label("Templates", systemImage: "doc.text").tag(SidebarItem.template)
                 }
             }
             .navigationSplitViewColumnWidth(min: 200, ideal: 220)
@@ -135,7 +140,9 @@ private struct MacRootView: View {
 
     @ViewBuilder
     private var detail: some View {
-        if let id = model.selectedHabitID, let habit = habits.first(where: { $0.id == id }) {
+        if model.showsTemplates {
+            TemplatesView()
+        } else if let id = model.selectedHabitID, let habit = habits.first(where: { $0.id == id }) {
             HabitDetailView(habit: habit)
         } else {
             switch model.section {

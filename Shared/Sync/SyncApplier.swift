@@ -164,6 +164,7 @@ enum SyncApplier {
         }()
         t.name = f.name
         t.isDefault = f.isDefault
+        t.weekdays = f.weekdays ?? []
         t.createdAt = f.createdAt
         for block in t.blocks { context.delete(block) }
         for b in f.blocks {
@@ -172,6 +173,7 @@ enum SyncApplier {
             block.id = b.id
             block.imageID = b.imageID
             block.required = b.required
+            block.checklistItems = b.checklist
             context.insert(block)
             block.template = t
         }

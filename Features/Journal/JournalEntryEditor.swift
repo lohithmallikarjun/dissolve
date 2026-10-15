@@ -93,8 +93,10 @@ private struct BlockEditor: View {
                     }
                 }
             }
-        case .checklist, .habitSummary:
-            Text(block.promptText).font(.headline).foregroundStyle(.secondary)
+        case .checklist:
+            ChecklistBlockView(block: block, onEdit: onEdit)
+        case .habitSummary:
+            HabitSummaryBlockView(title: block.promptText, date: entry.localDate ?? AppSettings.today())
         }
     }
 
@@ -263,5 +265,88 @@ struct PhotoViewer: View {
         #if os(macOS)
         .frame(minWidth: 500, minHeight: 400)
         #endif
+    }
+}
+
+/// Tick-off items; add more with the field at the bottom.
+private struct ChecklistBlockView: View {
+    @Bindable var block: EntryBlock
+    let onEdit: () -> Void
+    @State private var newItem = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if !block.promptText.isEmpty { Text(block.promptText).font(.headline) }
+            ForEach(Array(block.checklist.enumerated()), id: \.offset) { index, stored in
+                let item = ChecklistItem(stored: stored)
+                Button {
+                    withAnimation(.snappy) {
+                        block.checklist[index] = ChecklistItem(text: item.text, isDone: !item.isDone).stored
+                    }
+                    onEdit()
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle")
+                            .font(.title3)
+                            .foregroundStyle(item.isDone ? Color.green : .secondary)
+                            .contentTransition(.symbolEffect(.replace))
+                        Text(item.text)
+                            .strikethrough(item.isDone, color: .secondary)
+                            .foregroundStyle(item.isDone ? .secondary : .primary)
+                        Spacer()
+                    }
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .sensoryFeedback(.success, trigger: item.isDone) { _, done in done }
+                .contextMenu {
+                    Button("Remove", systemImage: "trash", role: .destructive) {
+                        block.checklist.remove(at: index)
+                        onEdit()
+                    }
+                }
+                .accessibilityAddTraits(item.isDone ? .isSelected : [])
+            }
+            HStack(spacing: 10) {
+                Image(systemName: "plus.circle").foregroundStyle(.secondary).font(.title3)
+                TextField("Add item", text: $newItem)
+                    .onSubmit {
+                        let text = newItem.trimmingCharacters(in: .whitespaces)
+                        guard !text.isEmpty else { return }
+                        block.checklist.append(ChecklistItem(text: text, isDone: false).stored)
+                        newItem = ""
+                        onEdit()
+                    }
+            }
+        }
+    }
+}
+
+/// The day's habits, live from the store (read-only).
+private struct HabitSummaryBlockView: View {
+    let title: String
+    let date: LocalDate
+    @Query(filter: #Predicate<Habit> { $0.archivedAt == nil }, sort: \Habit.sortOrder) private var habits: [Habit]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title.isEmpty ? String(localized: "Habits") : title).font(.headline)
+            ForEach(habits) { habit in
+                let engine = habit.engine()
+                let status = engine.status(on: date)
+                if status != .notScheduled || engine.value(on: date) > 0 {
+                    HStack(spacing: 10) {
+                        Image(systemName: status == .completed ? "checkmark.circle.fill"
+                              : status == .skipped ? "moon.zzz" : "circle")
+                            .foregroundStyle(status == .completed ? habit.color : .secondary)
+                        Text(habit.name)
+                        Spacer()
+                        Text(habit.detailText(engine: engine, day: date))
+                            .font(.caption).foregroundStyle(.secondary).numberStyle()
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        }
     }
 }

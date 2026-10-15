@@ -53,6 +53,7 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Dissolve
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
         INFOPLIST_KEY_NSFaceIDUsageDescription: Dissolve uses Face ID to keep your journal private.
+        "INFOPLIST_KEY_NSSupportsLiveActivities[sdk=iphone*]": YES
         TARGETED_DEVICE_FAMILY: "1"
         SUPPORTS_MACCATALYST: NO
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO

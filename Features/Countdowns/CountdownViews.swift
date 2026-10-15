@@ -127,6 +127,17 @@ struct CountdownDetailView: View {
             } else {
                 clock(now: now, state: state)
                 Text(text.weeksAndDays).font(.title3.weight(.semibold)).numberStyle().opacity(0.9)
+                #if os(iOS)
+                if !countdown.isAllDay && !countdown.countUp && !state.hasArrived {
+                    Button(CountdownActivities.isRunning(countdown.id) ? "On Lock Screen ✓" : "Show on Lock Screen",
+                           systemImage: "lock.iphone") {
+                        CountdownActivities.start(id: countdown.id, title: countdown.title, symbol: countdown.symbol,
+                                                  colorName: countdown.colorName, target: state.occurrence)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.white)
+                }
+                #endif
                 if !countdown.countUp {
                     ProgressRing(progress: state.progress, color: .white, lineWidth: 8) {
                         Text(state.progress, format: .percent.precision(.fractionLength(0)))

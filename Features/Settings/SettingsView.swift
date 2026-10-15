@@ -14,6 +14,9 @@ struct SettingsView: View {
     @Query(filter: #Predicate<Habit> { $0.archivedAt != nil }, sort: \Habit.name) private var archived: [Habit]
     @State private var dayEndsAt = AppSettings.dayEndsAtHour
     @State private var pickingFolder = false
+    @State private var exportDocument: ZipDocument?
+    @State private var exporting = false
+    @State private var exportError: String?
     @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
     @State private var journalNudge = AppSettings.journalNudgeMinutes != nil
     @State private var nudgeTime = Calendar.current.date(
@@ -118,6 +121,26 @@ struct SettingsView: View {
             }
 
             Section {
+                Button(exporting ? "Preparing…" : "Export Everything…", systemImage: "square.and.arrow.up") {
+                    exporting = true
+                    Task {
+                        do {
+                            exportDocument = try await ExportService.makeArchive(context: context)
+                        } catch {
+                            exportError = error.localizedDescription
+                        }
+                        exporting = false
+                    }
+                }
+                .disabled(exporting)
+                if let exportError { Text(exportError).font(.caption).foregroundStyle(.red) }
+            } header: {
+                Text("Data")
+            } footer: {
+                Text("A zip with all your data as JSON, one Markdown file per journal entry, and every photo.")
+            }
+
+            Section {
                 NavigationLink("Milestone 0 checks") {
                     DiagnosticsView(storeStatus: storeStatus)
                 }
@@ -129,6 +152,12 @@ struct SettingsView: View {
         .navigationTitle("Settings")
         .fileImporter(isPresented: $pickingFolder, allowedContentTypes: [.folder]) { syncFolder.select($0) }
         .task { await refreshNotifications() }
+        .fileExporter(isPresented: Binding(get: { exportDocument != nil }, set: { if !$0 { exportDocument = nil } }),
+                      document: exportDocument, contentType: .zip,
+                      defaultFilename: "Dissolve Export \(AppSettings.today())") { result in
+            if case .failure(let error) = result { exportError = error.localizedDescription }
+            exportDocument = nil
+        }
     }
 
     private func refreshNotifications() async {

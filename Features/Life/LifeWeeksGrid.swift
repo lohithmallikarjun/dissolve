@@ -6,6 +6,8 @@ import SwiftUI
 struct LifeWeeksGrid: View {
     let grid: LifeGrid
     let eras: [LifeEra]
+    /// Optional consistency level (0…4) per past week, to tint by habits instead of eras.
+    var levels: [LifeGrid.Cell: Int]? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let labelWidth: CGFloat = 24
@@ -43,6 +45,7 @@ struct LifeWeeksGrid: View {
         let dot = cell * 0.78
         let inset = (cell - dot) / 2
         var pastByColor: [String: Path] = [:]
+        var pastByLevel: [Int: Path] = [:]
         var future = Path()
 
         for row in 0..<grid.years {
@@ -52,8 +55,12 @@ struct LifeWeeksGrid: View {
                                   y: CGFloat(row) * cell + inset, width: dot, height: dot)
                 switch grid.state(c) {
                 case .past:
-                    let key = grid.era(for: c, in: eras)?.colorName ?? ""
-                    pastByColor[key, default: Path()].addEllipse(in: rect)
+                    if let levels, let level = levels[c] {
+                        pastByLevel[level, default: Path()].addEllipse(in: rect)
+                    } else {
+                        let key = grid.era(for: c, in: eras)?.colorName ?? ""
+                        pastByColor[key, default: Path()].addEllipse(in: rect)
+                    }
                 case .current:
                     break  // the pulsing overlay
                 case .future:
@@ -68,6 +75,10 @@ struct LifeWeeksGrid: View {
         for (colorName, path) in pastByColor {
             let color = colorName.isEmpty ? Color.primary.opacity(0.7) : HabitColor.named(colorName).color
             context.fill(path, with: .color(color))
+        }
+        for (level, path) in pastByLevel {
+            context.fill(path, with: .color(level == 0 ? Color.primary.opacity(0.15)
+                                            : Color.green.opacity(GridCellView.opacities[min(level, 4)])))
         }
         context.stroke(future, with: .color(Color.secondary.opacity(0.45)), lineWidth: max(cell * 0.08, 0.5))
     }

@@ -14,6 +14,8 @@ final class JournalTemplate {
     var id: UUID = UUID()
     var name: String = ""
     var isDefault: Bool = false
+    /// Weekdays (`1 = Sunday … 7 = Saturday`) this template is used for; empty = only as the default.
+    var weekdays: [Int] = []
     var createdAt: Date = Date.now
     var updatedAt: Date = Date.now
 
@@ -37,6 +39,8 @@ final class TemplateBlock {
     var placeholder: String = ""
     var imageID: String?
     var required: Bool = false
+    /// Checklist blocks: the items each new entry starts with.
+    var checklistItems: [String] = []
     var template: JournalTemplate?
 
     init(kind: BlockKind, order: Int, promptText: String = "", placeholder: String = "") {
@@ -100,6 +104,7 @@ final class EntryBlock {
     var promptText: String = ""
     var placeholder: String = ""
     var text: String = ""
+    /// Checklist items as "[x] text" / "[ ] text".
     var checklist: [String] = []
     var rating: Int = 0
     var photoIDs: [String] = []
@@ -135,4 +140,27 @@ final class Photo {
         self.width = width
         self.height = height
     }
+}
+
+/// A checklist line stored as "[x] text" or "[ ] text".
+struct ChecklistItem: Hashable {
+    var text: String
+    var isDone: Bool
+
+    init(text: String, isDone: Bool) {
+        self.text = text
+        self.isDone = isDone
+    }
+
+    init(stored: String) {
+        if stored.hasPrefix("[x] ") {
+            self.init(text: String(stored.dropFirst(4)), isDone: true)
+        } else if stored.hasPrefix("[ ] ") {
+            self.init(text: String(stored.dropFirst(4)), isDone: false)
+        } else {
+            self.init(text: stored, isDone: false)
+        }
+    }
+
+    var stored: String { (isDone ? "[x] " : "[ ] ") + text }
 }

@@ -12,6 +12,10 @@ struct TodayView: View {
     @State private var addingHabit = false
     @State private var detailHabit: Habit?
     @State private var dayEditorHabit: Habit?
+    #if os(macOS)
+    @State private var selectedIndex = 0
+    @FocusState private var focused: Bool
+    #endif
 
     var body: some View {
         let today = model.today
@@ -34,7 +38,8 @@ struct TodayView: View {
                     .buttonStyle(.plain)
                     .accessibilityHint("Opens Progress")
 
-                    ForEach(Array(zip(habits, engines)), id: \.0.id) { habit, engine in
+                    ForEach(Array(zip(habits, engines).enumerated()), id: \.element.0.id) { index, pair in
+                        let (habit, engine) = pair
                         HabitCard(habit: habit, engine: engine, day: day) { action in
                             switch action {
                             case .edit: editingHabit = habit
@@ -45,6 +50,15 @@ struct TodayView: View {
                         .scrollTransition(.animated(.smooth)) { content, phase in
                             content.opacity(phase.isIdentity ? 1 : 0.6).scaleEffect(phase.isIdentity ? 1 : 0.96)
                         }
+                        .accessibilitySortPriority(Double(-index))
+                        #if os(macOS)
+                        .overlay {
+                            if focused && index == selectedIndex {
+                                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                    .strokeBorder(Color.accentColor, lineWidth: 2)
+                            }
+                        }
+                        #endif
                     }
                 }
             }
@@ -52,6 +66,26 @@ struct TodayView: View {
             .frame(maxWidth: 720)
             .frame(maxWidth: .infinity)
         }
+        #if os(macOS)
+        // Space toggles the selected habit; ↑ / ↓ move the selection.
+        .focusable()
+        .focused($focused)
+        .focusEffectDisabled()
+        .onKeyPress(.space) {
+            guard habits.indices.contains(selectedIndex) else { return .ignored }
+            withAnimation(.snappy) { HabitActions.primaryAction(habits[selectedIndex], on: model.day, in: context) }
+            return .handled
+        }
+        .onKeyPress(.downArrow) {
+            selectedIndex = min(selectedIndex + 1, max(habits.count - 1, 0))
+            return .handled
+        }
+        .onKeyPress(.upArrow) {
+            selectedIndex = max(selectedIndex - 1, 0)
+            return .handled
+        }
+        .onAppear { focused = true }
+        #endif
         .navigationTitle(day == today ? String(localized: "Today") : day.relativeName(today: today))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {

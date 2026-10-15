@@ -33,15 +33,29 @@ enum JournalStore {
         return try? context.fetch(descriptor).first
     }
 
-    /// The day's entry, created from the template if there isn't one (one entry per day).
+    /// The template for a day: one assigned to that weekday, else the default.
+    static func template(for date: LocalDate, in context: ModelContext) -> JournalTemplate {
+        let all = (try? context.fetch(FetchDescriptor<JournalTemplate>(sortBy: [SortDescriptor(\.createdAt)]))) ?? []
+        return all.first { $0.weekdays.contains(date.weekday) } ?? defaultTemplate(in: context)
+    }
+
+    static func allTemplates(in context: ModelContext) -> [JournalTemplate] {
+        _ = defaultTemplate(in: context)
+        return (try? context.fetch(FetchDescriptor<JournalTemplate>(sortBy: [SortDescriptor(\.createdAt)]))) ?? []
+    }
+
+    /// The day's entry, created from a template if there isn't one (one entry per day).
     /// The template's blocks are copied, so later template edits never change this entry.
-    static func entryCreatingIfNeeded(on date: LocalDate, in context: ModelContext) -> JournalEntry {
+    static func entryCreatingIfNeeded(on date: LocalDate, template chosen: JournalTemplate? = nil,
+                                      in context: ModelContext) -> JournalEntry {
         if let existing = entry(on: date, in: context) { return existing }
-        let template = defaultTemplate(in: context)
+        let template = chosen ?? template(for: date, in: context)
         let entry = JournalEntry(date: date, templateID: template.id)
         context.insert(entry)
         for t in template.orderedBlocks {
             let block = EntryBlock(kind: t.kind, order: t.order, promptText: t.promptText, placeholder: t.placeholder)
+            block.checklist = t.checklistItems.map { ChecklistItem(text: $0, isDone: false).stored }
+            if let imageID = t.imageID { block.photoIDs = [imageID] }
             context.insert(block)
             block.entry = entry
         }

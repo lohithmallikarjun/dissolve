@@ -35,6 +35,8 @@ final class AppModel {
     var day: LocalDate
     /// Set to open that day's journal entry (deep links, ⌘N).
     var journalDate: LocalDate?
+    /// Mac sidebar: Templates selected.
+    var showsTemplates = false
     /// CI screenshots: opens the countdown at this index on the Life screen.
     var countdownToOpen: Int?
     private(set) var today: LocalDate
@@ -77,11 +79,13 @@ final class AppModel {
         day = min(date, today)
         section = .today
         selectedHabitID = nil
+        showsTemplates = false
     }
 
     func openJournal(_ date: LocalDate? = nil) {
         section = .journal
         selectedHabitID = nil
+        showsTemplates = false
         journalDate = min(date ?? today, today)
     }
 
