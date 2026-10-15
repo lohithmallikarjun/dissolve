@@ -84,6 +84,25 @@ On the **Milestone 0** screen:
 | 11 | Mac: sidebar, ⌘1–4, ⌘← / ⌘→, click a grid day → inspector | |
 | 12 | Settings (gear) → Day ends at | Default 3 am |
 
+## Milestone 2: try it (sync + journal)
+
+| # | Do | Expect |
+|---|---|---|
+| 1 | First launch on each device: **Choose Folder…** → iCloud Drive → the same folder (e.g. `Dissolve`) | ✓ and the folder name. Later: Settings → Sync |
+| 2 | iPhone: Journal tab → Face ID | Unlocks. Leave the app and come back: locked again; the app switcher shows it blurred |
+| 3 | **New Entry** (✎) | Today's entry: prompt, text, photos, mood |
+| 4 | Type a few lines, pick a mood, **Add Photos** (several) | Word count rolls; thumbnails appear |
+| 5 | Mac: ⌘N, then drag a photo in from Finder, or copy one and press ⌘V | Photo added |
+| 6 | Wait ~1 minute, open Dissolve on the other device (or Settings → **Sync Now**) | The entry, its photos and today's habit checks appear |
+| 7 | Edit the same habit on both devices, then sync both | The later edit wins on both |
+| 8 | Home Screen: add **Journal** and **On This Day** widgets; Lock Screen: journal streak | Tapping opens today's (or that day's) entry |
+| 9 | Progress → **Count journaling** | Journaling counts as one more thing done each day |
+
+How sync works: each device appends its own changes to `changes/<device>/<yyyy-MM>.jsonl` in the chosen
+folder and reads the others' files; per record the newest edit wins and deletes are remembered.
+Photos go to `photos/`. Nothing needs a paid account or CloudKit. iCloud itself can take a minute or two
+to move files between devices.
+
 ## Weekly reinstall (free account: apps expire after 7 days)
 
 `scripts/reinstall-iphone.sh` pulls, builds and reinstalls Dissolve on your iPhone over Wi-Fi.
