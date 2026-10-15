@@ -4,11 +4,11 @@ import WidgetKit
 
 /// A precomputed grid: layout plus a cell for every visible day. Cheap to pass to widgets.
 struct GridSnapshot: Sendable {
-    let layout: GridLayout
+    let layout: WeekGrid
     /// `[column][row]`; nil after today.
     let cells: [[GridCell?]]
 
-    init(layout: GridLayout, cell: (LocalDate) -> GridCell) {
+    init(layout: WeekGrid, cell: (LocalDate) -> GridCell) {
         self.layout = layout
         cells = (0..<layout.weeks).map { column in
             (0..<7).map { row in layout.date(column: column, row: row).map(cell) }
@@ -16,13 +16,13 @@ struct GridSnapshot: Sendable {
     }
 
     static func overall(engines: [HabitEngine], today: LocalDate, weeks: Int) -> GridSnapshot {
-        GridSnapshot(layout: GridLayout(endingAt: today, weeks: weeks, firstWeekday: AppSettings.firstWeekday)) {
+        GridSnapshot(layout: WeekGrid(endingAt: today, weeks: weeks, firstWeekday: AppSettings.firstWeekday)) {
             Overall.cell(on: $0, engines: engines)
         }
     }
 
     static func habit(_ engine: HabitEngine, weeks: Int) -> GridSnapshot {
-        GridSnapshot(layout: GridLayout(endingAt: engine.today, weeks: weeks, firstWeekday: engine.firstWeekday)) {
+        GridSnapshot(layout: WeekGrid(endingAt: engine.today, weeks: weeks, firstWeekday: engine.firstWeekday)) {
             engine.cell(on: $0)
         }
     }
@@ -117,7 +117,7 @@ struct GridLegend: View {
 
 #Preview {
     let today = LocalDate("2026-10-15")!
-    let snapshot = GridSnapshot(layout: GridLayout(endingAt: today, weeks: 20)) { date in
+    let snapshot = GridSnapshot(layout: WeekGrid(endingAt: today, weeks: 20)) { date in
         GridCell(level: (date.dayNumber * 7) % 5, isSkipped: date.dayNumber % 23 == 0)
     }
     VStack(alignment: .trailing) {

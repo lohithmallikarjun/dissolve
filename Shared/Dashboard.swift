@@ -79,7 +79,7 @@ extension GridSnapshot {
     func suffix(weeks: Int) -> GridSnapshot {
         let n = min(weeks, layout.weeks)
         let source = self
-        return GridSnapshot(layout: GridLayout(endingAt: layout.today, weeks: n, firstWeekday: layout.firstWeekday)) { date in
+        return GridSnapshot(layout: WeekGrid(endingAt: layout.today, weeks: n, firstWeekday: layout.firstWeekday)) { date in
             let offset = source.layout.start.days(to: date)
             return source.cells[offset / 7][offset % 7] ?? .empty
         }

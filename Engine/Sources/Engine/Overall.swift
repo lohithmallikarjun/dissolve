@@ -38,7 +38,7 @@ public enum Overall {
 }
 
 /// A GitHub-style layout: columns are weeks, rows are weekdays, today in the last column.
-public struct GridLayout: Sendable {
+public struct WeekGrid: Sendable {
     public struct MonthLabel: Hashable, Sendable {
         public let column: Int
         public let month: Int

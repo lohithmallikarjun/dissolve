@@ -202,14 +202,14 @@ struct GridTests {
     }
 
     @Test func yearLayoutPutsTodayInLastColumn() {
-        let layout = GridLayout(endingAt: d("2026-10-15"), weeks: 53, firstWeekday: 2)
+        let layout = WeekGrid(endingAt: d("2026-10-15"), weeks: 53, firstWeekday: 2)
         #expect(layout.start == d("2025-10-13"))  // a Monday, 52 weeks before this week's Monday
         #expect(layout.date(column: 52, row: 3) == d("2026-10-15"))
         #expect(layout.date(column: 52, row: 4) == nil)  // tomorrow
         #expect(layout.rowWeekdays == [2, 3, 4, 5, 6, 7, 1])
         #expect(layout.allDates.count == 52 * 7 + 4)
         let labels = layout.monthLabels
-        #expect(labels.first == GridLayout.MonthLabel(column: 2, month: 11, year: 2025))
+        #expect(labels.first == WeekGrid.MonthLabel(column: 2, month: 11, year: 2025))
         #expect(labels.count == 12)
         #expect(labels.last?.month == 10)
     }

@@ -153,7 +153,7 @@ private struct TodayPulse: ViewModifier {
 #Preview {
     @Previewable @State var selection: LocalDate?
     let today = LocalDate("2026-10-15")!
-    let snapshot = GridSnapshot(layout: GridLayout(endingAt: today, weeks: 53)) { date in
+    let snapshot = GridSnapshot(layout: WeekGrid(endingAt: today, weeks: 53)) { date in
         GridCell(level: (date.dayNumber * 7 + date.day) % 5, isSkipped: date.dayNumber % 29 == 0)
     }
     ContributionGrid(snapshot: snapshot, color: .green, selection: $selection, label: { $0.formatted() }) { date in
