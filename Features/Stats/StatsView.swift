@@ -123,6 +123,9 @@ private struct StrengthCard: View {
                 }
                 .chartXScale(domain: 0...115)
                 .chartXAxis(.hidden)
+                .chartYAxis {
+                    AxisMarks(position: .leading) { AxisValueLabel().font(.caption) }
+                }
                 .frame(height: CGFloat(stats.habits.count) * 26 + 8)
             }
         }
@@ -197,8 +200,14 @@ private struct StreaksCard: View {
                         Text("\(habit.current.count)\(unit)").font(.subheadline.weight(.semibold)).numberStyle()
                         Text("best \(habit.best.count)\(unit)").font(.caption).foregroundStyle(.secondary).numberStyle()
                     }
-                    ProgressView(value: Double(habit.current.count), total: Double(max(habit.best.count, 1)))
-                        .tint(habit.color)
+                    GeometryReader { proxy in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(habit.color.opacity(0.18))
+                            Capsule().fill(habit.color)
+                                .frame(width: proxy.size.width * min(Double(habit.current.count) / Double(max(habit.best.count, 1)), 1))
+                        }
+                    }
+                    .frame(height: 6)
                 }
                 .accessibilityElement(children: .combine)
             }

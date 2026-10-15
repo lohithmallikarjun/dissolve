@@ -135,6 +135,18 @@ to move files between devices.
 Notifications are local (scheduled on the device a week ahead), so they need no paid account and no server.
 They're refreshed every time you open Dissolve.
 
+## Milestone 5: try it (statistics)
+
+| # | Do | Expect |
+|---|---|---|
+| 1 | Progress → **Stats** | Five cards, each starting with one sentence about your data |
+| 2 | Strength: switch 30 days / 90 days / 1 year; drag across the chart | Insight updates; a readout follows your finger |
+| 3 | Completion: Weeks / Months; tap a bar | That period's % and done/scheduled |
+| 4 | Streaks, By weekday, Journal | Current vs best; strongest and weakest weekday; journaling streak, words, mood |
+| 5 | Home Screen → **Stats** widget: small and medium | Strength with a 30-day sparkline; this week vs last week |
+
+Insights need a few days of data; until then the cards say so.
+
 ## Weekly reinstall (free account: apps expire after 7 days)
 
 `scripts/reinstall-iphone.sh` pulls, builds and reinstalls Dissolve on your iPhone over Wi-Fi.
