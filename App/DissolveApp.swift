@@ -6,19 +6,69 @@ struct DissolveApp: App {
     private let container: ModelContainer
     private let storeStatus: StoreStatus
     @State private var syncFolder = SyncFolderStore()
+    @State private var model = AppModel()
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         let made = SharedModelContainer.make()
         container = made.0
         storeStatus = made.1
+        #if DEBUG
+        DemoData.seedIfRequested(in: container.mainContext)
+        #endif
     }
 
     var body: some Scene {
         WindowGroup {
             RootView(storeStatus: storeStatus)
                 .environment(syncFolder)
+                .environment(model)
                 .tint(.green)
+                .task { await model.runDayClock() }
+                #if DEBUG
+                .task { await WidgetGallery.renderIfRequested(container: container) }
+                #endif
         }
         .modelContainer(container)
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { model.refreshToday() }
+        }
+        .commands {
+            DissolveCommands(model: model)
+        }
+
+        #if os(macOS)
+        Settings {
+            NavigationStack { SettingsView(storeStatus: storeStatus) }
+                .environment(syncFolder)
+                .modelContainer(container)
+                .frame(width: 460, height: 520)
+        }
+        #endif
+    }
+}
+
+/// ⌘1–4 switch sections, ⌘← / ⌘→ change day.
+struct DissolveCommands: Commands {
+    let model: AppModel
+
+    var body: some Commands {
+        CommandMenu("Go") {
+            ForEach(Array(AppSection.allCases.enumerated()), id: \.element) { index, section in
+                Button(section.title) {
+                    model.section = section
+                    model.selectedHabitID = nil
+                }
+                .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
+            }
+            Divider()
+            Button("Previous Day") { model.moveDay(by: -1) }
+                .keyboardShortcut(.leftArrow, modifiers: .command)
+            Button("Next Day") { model.moveDay(by: 1) }
+                .keyboardShortcut(.rightArrow, modifiers: .command)
+                .disabled(model.day >= model.today)
+            Button("Go to Today") { model.showDay(model.today) }
+                .keyboardShortcut("t", modifiers: .command)
+        }
     }
 }

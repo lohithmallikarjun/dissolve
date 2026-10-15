@@ -36,7 +36,9 @@ targets:
     supportedDestinations: [iOS, macOS]
     sources:
       - App
+      - DesignSystem
       - Features
+      - Intents
       - Models
       - Shared
     dependencies:
@@ -64,6 +66,8 @@ targets:
     supportedDestinations: [iOS, macOS]
     sources:
       - Widgets
+      - DesignSystem
+      - Intents
       - Models
       - Shared
     dependencies:

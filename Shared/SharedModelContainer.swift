@@ -12,7 +12,7 @@ struct StoreStatus: Sendable {
 /// Builds the one SwiftData store, in the App Group container so the
 /// widgets read the same data. Local only: CloudKit is explicitly off.
 enum SharedModelContainer {
-    static var schema: Schema { Schema([DiagnosticPing.self]) }
+    static var schema: Schema { Schema([Habit.self, HabitSchedule.self, HabitLog.self, DiagnosticPing.self]) }
     private static let storeName = "Dissolve"
 
     static func appGroup() throws -> ModelContainer {

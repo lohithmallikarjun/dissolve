@@ -12,3 +12,4 @@ build/
 *.xcuserstate
 xcuserdata/
 .DS_Store
+scripts/device.local

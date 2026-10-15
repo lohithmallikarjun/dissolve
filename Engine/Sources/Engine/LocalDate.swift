@@ -130,3 +130,7 @@ extension LocalDate: Codable {
         try container.encode(description)
     }
 }
+
+extension LocalDate: Identifiable {
+    public var id: Int { dayNumber }
+}

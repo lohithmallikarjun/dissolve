@@ -74,22 +74,30 @@ jobs:
 
       - name: iOS screenshots
         run: |
-          mkdir -p shots
+          mkdir -p shots/widgets
           xcrun simctl install "$UDID" "$DERIVED/Build/Products/Debug-iphonesimulator/Dissolve.app"
+          launch() {
+            xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
+            xcrun simctl launch "$UDID" "$BUNDLE_ID" "$@"
+          }
           for mode in light dark; do
             xcrun simctl ui "$UDID" appearance "$mode"
-            xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
-            xcrun simctl launch "$UDID" "$BUNDLE_ID"
-            sleep 8
-            xcrun simctl io "$UDID" screenshot "shots/ios-$mode.png"
+            launch -demoData -widgetGallery -section today
+            sleep 10
+            xcrun simctl io "$UDID" screenshot "shots/ios-today-$mode.png"
+            launch -section progress
+            sleep 7
+            xcrun simctl io "$UDID" screenshot "shots/ios-progress-$mode.png"
           done
+          DATA=$(xcrun simctl get_app_container "$UDID" "$BUNDLE_ID" data)
+          cp "$DATA"/Documents/widget-gallery/*.png shots/widgets/ || echo "::warning::No widget gallery images"
 
       - name: macOS screenshot
         continue-on-error: true
         run: |
           APP="$DERIVED/Build/Products/Debug/Dissolve.app"
-          open "$APP"
-          sleep 10
+          open "$APP" --args -demoData -section progress
+          sleep 12
           screencapture -x shots/mac.png
           osascript -e 'quit app "Dissolve"' || true
 
