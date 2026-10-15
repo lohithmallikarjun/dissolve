@@ -85,13 +85,13 @@ jobs:
             launch -demoData -widgetGallery -section:today
             sleep 10
             xcrun simctl io "$UDID" screenshot "shots/ios-today-$mode.png"
-            launch -section:progress
+            launch -demoData -section:progress
             sleep 7
             xcrun simctl io "$UDID" screenshot "shots/ios-progress-$mode.png"
-            launch -section:journal
+            launch -demoData -section:journal
             sleep 6
             xcrun simctl io "$UDID" screenshot "shots/ios-journal-$mode.png"
-            launch -openJournal:-1
+            launch -demoData -openJournal:-1
             sleep 6
             xcrun simctl io "$UDID" screenshot "shots/ios-entry-$mode.png"
           done
