@@ -26,9 +26,11 @@ struct ContributionGrid<Popover: View>: View {
     /// Below this the year doesn't fit; the grid scrolls sideways instead, today at the right.
     let minFitCell: CGFloat = 9
     let scrollCell: CGFloat = 13
+    let maxCell: CGFloat = 30
     #else
     let minFitCell: CGFloat = 7
     let scrollCell: CGFloat = 11
+    let maxCell: CGFloat = 18
     #endif
 
     private var columns: CGFloat { CGFloat(snapshot.layout.weeks) }
@@ -43,7 +45,7 @@ struct ContributionGrid<Popover: View>: View {
 
     private var cellSize: CGFloat {
         guard width > 0 else { return scrollCell }
-        return scrolls ? scrollCell : min(fitCell, 30)
+        return scrolls ? scrollCell : min(fitCell, maxCell)
     }
 
     private var columnsWidth: CGFloat { columns * cellSize + (columns - 1) * spacing }
@@ -65,7 +67,9 @@ struct ContributionGrid<Popover: View>: View {
                 GridLegend(color: color)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        // A fixed ideal width, so a window sizing itself to its content can't feed back
+        // into the measured width.
+        .frame(minWidth: 0, idealWidth: 600, maxWidth: .infinity, alignment: .leading)
         .background {
             GeometryReader { proxy in
                 Color.clear

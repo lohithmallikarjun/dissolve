@@ -35,6 +35,9 @@ struct DissolveApp: App {
                 #endif
         }
         .modelContainer(container)
+        #if os(macOS)
+        .defaultSize(width: 1100, height: 760)
+        #endif
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
             model.refreshToday()
