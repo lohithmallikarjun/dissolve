@@ -67,6 +67,35 @@ On the **Milestone 0** screen:
 | 8 | On the Mac: pick the same folder, **Write test file**, then **Read test files** | Rows for both devices; message says “from another device ✓” |
 | 9 | Back on the iPhone: **Read test files** | The Mac's row appears (may take a minute; tap Read again) |
 
+## Weekly reinstall (free account: apps expire after 7 days)
+
+`scripts/reinstall-iphone.sh` pulls, builds and reinstalls Dissolve on your iPhone over Wi-Fi.
+Reinstalling keeps all data. One-time setup:
+
+1. In Xcode: **Window → Devices and Simulators** → select your iPhone → tick **Connect via network**.
+2. In Terminal, find the iPhone's identifier:
+   ```sh
+   xcrun devicectl list devices
+   ```
+3. Save it (replace the ID):
+   ```sh
+   cd ~/dissolve
+   echo 'DEVICE_ID=00008110-001234567890801E' > scripts/device.local
+   ```
+4. Try it once (iPhone unlocked, same Wi-Fi as the Mac):
+   ```sh
+   scripts/reinstall-iphone.sh
+   ```
+5. Run it every Sunday at 10:00 automatically:
+   ```sh
+   cp scripts/com.lohith.dissolve.reinstall.plist ~/Library/LaunchAgents/
+   launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.lohith.dissolve.reinstall.plist
+   ```
+   The Mac must be awake and logged in at that time. Log: `/tmp/dissolve-reinstall.log`.
+   To stop: `launchctl bootout gui/$(id -u)/com.lohith.dissolve.reinstall`.
+
+The job assumes the repo is at `~/dissolve`; edit the plist if it lives elsewhere.
+
 ## Engine tests
 
 ```sh
