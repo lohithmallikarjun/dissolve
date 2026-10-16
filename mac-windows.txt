@@ -1,0 +1,3 @@
+Life, 0, 31, 1024, 674
+  PID  %CPU STAT COMMAND
+31937   4.0 S<   /Users/runner/work/dissolve/dissolve/build/Build/Products/Debug/Dissolve.app/Contents/MacOS/Dissolve -demoData -section:life
